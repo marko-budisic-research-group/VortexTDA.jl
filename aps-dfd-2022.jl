@@ -40,24 +40,45 @@ begin
 	cut = 5
 end;
 
-# ╔═╡ 802d10f9-6e6c-401b-ab36-2981b5036208
-
-
-# ╔═╡ c9a3b116-429a-4937-a0fc-a70fbd0a32ed
-
-
 # ╔═╡ f6641248-3519-4c0f-b02b-a2e8343a9c6e
+"""
+Paths correspond to Alemni's folder.
+"""
+function alemnis_path()
+	toplevel = raw"C:\\Users\\yiran\\OneDrive\\Documents\\Research\\TDA\\raw_data\\Will"
 
+	panelcase = "P$(panel)C$(case)\\"
+	
+	vort_path = toplevel * "\\mat_file\\" * panelcase
+	sav_path = toplevel * "\\old_results\\"* panelcase 
+	vort_path, sav_path
+end;
 
 # ╔═╡ 4abde889-f80d-431c-9a78-4a53d70f4727
-begin
+function markos_path()
 	toplevel = raw"/Volumes/GoogleDrive/.shortcut-targets-by-id/1U-9WSU_a1YjWMmjCKhqZLiC6Rha4kesp/GreenYiran/will"
 
 	panelcase = "P$(panel)C$(case)/"
 	
 	vort_path = toplevel * "/data/" * panelcase
 	sav_path = toplevel * "/results/"* panelcase 
+	return vort_path, sav_path
 end;
+
+# ╔═╡ c9a3b116-429a-4937-a0fc-a70fbd0a32ed
+begin
+	vort_path, sav_path = alemnis_path()
+
+	if !( isdir(vort_path) && isdir(sav_path) )
+		vort_path, sav_path = markos_path()
+	end
+
+	if !( isdir(vort_path) && isdir(sav_path) )
+		error("Unsuccessful path change -- folders don't exist")
+	end
+	@show vort_path
+	@show sav_path
+end
 
 # ╔═╡ 49f213e0-316d-4aa9-9af2-50f4d074739c
 j = 1
@@ -2362,7 +2383,6 @@ version = "1.4.1+0"
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
-# ╠═802d10f9-6e6c-401b-ab36-2981b5036208
 # ╠═c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
