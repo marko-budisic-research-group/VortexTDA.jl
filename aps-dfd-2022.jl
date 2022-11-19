@@ -125,8 +125,16 @@ function display_vorticity(Xs,Ys,Vs,titlestring="")
 	return plot_handle
 end
 
-# ╔═╡ f2958c17-b24f-4b75-a62c-875f3ff6550d
+# ╔═╡ 61878364-e6b4-4886-bd45-eaa26863f363
+md"""
+## Compute the persistent homology.
 
+"""
+
+# ╔═╡ 630acaf0-4b21-4ed7-893f-7eaf6ade2403
+md"""
+## Extract the representatives
+"""
 
 # ╔═╡ 1754b2dd-0ef8-4d68-8e30-1d8847c62299
 
@@ -234,8 +242,14 @@ begin
 	X,Y,vorticity = retrieve_snapshot(j, panel)
 end;
 
-# ╔═╡ 688f7320-b1ff-44f6-90ac-17665ea52bce
-display_vorticity(X,Y,vorticity,"$(caselabel) : snapshot = $(j)")
+# ╔═╡ 205fe892-a6cf-4528-96d1-18bfdeda801a
+function process_snapshot( input, cutoff=0)
+	f(v) = ripserer( Cubical(v),
+		cutoff=cutoff, reps=true, alg=:homology )
+	PH_pos = f(input)
+	PH_neg = f(-input)
+	return PH_neg, PH_pos
+end
 
 # ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
 """
@@ -250,23 +264,43 @@ end
 """
 Compute Persistent Homology of sub/superlevel sets for desired panel.
 """
-function process_snapshot( idx, panel_n, cutoff )
+function process_snapshot( idx, panel_n, cutoff=0)
 
 	X,Y,vorticity = retrieve_snapshot(idx, panel_n)
-
 	vorticity = pad_by_value(vorticity)
 
-
-	PH_pos = ripserer( Cubical( vorticity ), cutoff=cutoff, reps=true, alg=:homology )
-	PH_neg = ripserer( Cubical( -vorticity ), cutoff=cutoff, reps=true, alg=:homology )
-
-	return PH_neg, PH_pos
+	return process_snapshot(vorticity, cutoff)
 
 end
 
-# ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
-PH_neg, PH_pos = process_snapshot(vorticity)
+# ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
+"""
+Pad X/Y grid by appropriate values 
+"""
+function pad_grid(X,Y)
+	delta_x = (X[3]-X[1])/2 # why not X[2]-X[1]?
+	delta_y = (Y[3]-Y[1])/2
+	Xx = append!([X[1]-delta_x], X, [X[end]+delta_x])
+	Yy = append!([Y[1]-delta_y], Y, [Y[end]+delta_y])
+	return Xx, Yy
+end
+	
 
+# ╔═╡ 40de9c62-98c7-45fa-a332-7a9b374c7cfe
+begin
+	Xx, Yy = pad_grid(X,Y)
+	vort = zeros(size(vorticity)[1]+2,size(vorticity)[2]+2)
+	vort[2:end-1,2:end-1] = vorticity
+end;
+
+# ╔═╡ 688f7320-b1ff-44f6-90ac-17665ea52bce
+plt_reps = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)")
+
+# ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
+@show(plt_reps)
+
+# ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
+PH_neg, PH_pos = process_snapshot(vort)
 
 # ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
 @show(PH_neg[1])
@@ -303,59 +337,6 @@ begin
 	@show(plt_flip)
 	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
 end
-
-# ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
-"""
-Pad X/Y grid by appropriate values 
-"""
-function pad_grid(X,Y)
-	delta_x = (X[3]-X[1])/2 # why not X[2]-X[1]?
-	delta_y = (Y[3]-Y[1])/2
-	Xx = append!([X[1]-delta_x], X, [X[end]+delta_x])
-	Yy = append!([Y[1]-delta_y], Y, [Y[end]+delta_y])
-	return Xx, Yy
-end
-	
-
-# ╔═╡ 40de9c62-98c7-45fa-a332-7a9b374c7cfe
-begin
-	Xx, Yy = pad_grid(X,Y)
-	vort = zeros(size(vorticity)[1]+2,size(vorticity)[2]+2)
-	vort[2:end-1,2:end-1] = vorticity
-end;
-
-# ╔═╡ 667239bc-6a2a-4961-b8ce-23f2c3960b90
-begin
-	if case==1
-        plt_reps = heatmap(Xx,Yy,vort; title="Heaving",
-        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
-        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
-		background_color = :transparent, 
-        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
-        size=(600,800), foreground_color = :black, dpi=300
-        );
-	elseif case==2
-        plt_reps = heatmap(Xx,Yy,vort; title="Pitching",
-        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
-        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
-		background_color = :transparent, 
-        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
-        size=(600,800), foreground_color = :black, dpi=300
-        );
-	elseif case==3
-        plt_reps = heatmap(Xx,Yy,vort; title="Pitch + Heave",
-        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
-        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
-		background_color = :transparent, 
-		# xlims=(0,2.2), ylims=(-2.2,2.2)
-        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
-        size=(600,800), foreground_color = :black, dpi=300
-        );
-	end
-end;
-
-# ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
-@show(plt_reps)
 
 # ╔═╡ 917d2df6-e9ff-4f91-96af-ce6e32c68624
 begin
@@ -2387,9 +2368,9 @@ version = "1.4.1+0"
 # ╠═40de9c62-98c7-45fa-a332-7a9b374c7cfe
 # ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
 # ╠═688f7320-b1ff-44f6-90ac-17665ea52bce
+# ╟─61878364-e6b4-4886-bd45-eaa26863f363
 # ╠═f777ae38-3aa2-4ec0-a6c5-1840b4133a20
-# ╠═667239bc-6a2a-4961-b8ce-23f2c3960b90
-# ╠═f2958c17-b24f-4b75-a62c-875f3ff6550d
+# ╟─630acaf0-4b21-4ed7-893f-7eaf6ade2403
 # ╠═917d2df6-e9ff-4f91-96af-ce6e32c68624
 # ╠═1754b2dd-0ef8-4d68-8e30-1d8847c62299
 # ╠═75784082-b66e-472c-95a2-ae18249d4d2d
@@ -2420,6 +2401,7 @@ version = "1.4.1+0"
 # ╠═77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═6080a86a-9149-4174-927a-cc227b97f7a7
+# ╠═205fe892-a6cf-4528-96d1-18bfdeda801a
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
 # ╠═47d44aca-3fa5-486f-981f-73c402909c4e
