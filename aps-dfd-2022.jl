@@ -30,18 +30,38 @@ end
 # ╔═╡ fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 using PlutoUI
 
-# ╔═╡ f2f42943-b95b-4b32-83a6-421b7f97f6c0
+# ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
+TableOfContents()
 
+# ╔═╡ e3d69201-3c69-4835-bc81-9c46ed86d8cf
+md"""
+
+# Initial Setup
+
+Tune the following values:
+  - Snapshot number $(@bind j Slider(1:25, show_value=true))
+  - Topological noise cutoff $(@bind cut Slider(0:0.1:10, show_value = true))
+"""
+
+# ╔═╡ a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
+md"""
+## Panel parameters
+"""
 
 # ╔═╡ 523b6671-00c3-45c8-92ba-f8540829dcd7
+## Markdonw
 begin
 	panel = 1
 	case = 1
 	clevel = 15
 	panelc = [0.0505 0.0505 0.0505 0.0505]; #panel dimensions in graph between -0.0505 <= x <= 0.0505 and -0.0505 <= y <= 0.0505
 	leftcut = [24 13 10 15]
-	cut = 5
 end;
+
+# ╔═╡ fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
+md"""
+## Paths
+"""
 
 # ╔═╡ f6641248-3519-4c0f-b02b-a2e8343a9c6e
 """
@@ -81,31 +101,7 @@ begin
 	end
 	@show vort_path
 	@show sav_path
-end
-
-# ╔═╡ 49f213e0-316d-4aa9-9af2-50f4d074739c
-@bind j  Slider(1:25)
-#@bind j Clock(interval=1,max_value = 25)
-
-# ╔═╡ 309ec77f-6271-485f-bc63-bb3004f453ce
-
-
-# ╔═╡ 3636dc1c-32b0-4671-85a3-7d59aa085410
-@show(j)
-
-# ╔═╡ 6d9a97ca-d2a5-4cee-a667-2a3d084c486c
-begin
-	fdir=readdir(vort_path)
-	i = fdir[j]
 end;
-
-# ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
-PH_neg = ripserer(CubCom_neg, cutoff=cut, reps=true, alg=:homology);
-# Persistent homology of flipped vorticity (mins =  maxs)
-
-# ╔═╡ c7dedf0b-2528-47f9-8a88-1ec870a84734
-PH_pos = ripserer(CubCom_pos, cutoff=cut, reps=true, alg=:homology);
-# Pesistent homology of vorticity (maxs = maxs)
 
 # ╔═╡ f2958c17-b24f-4b75-a62c-875f3ff6550d
 
@@ -129,9 +125,6 @@ PH_pos = ripserer(CubCom_pos, cutoff=cut, reps=true, alg=:homology);
 # ╔═╡ 2959ae4e-4d32-483e-b7c4-f76db2b33f1a
  #cut=5;
 
-# ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
-@show(PH_neg[1])
-
 # ╔═╡ a3d6464f-2349-49b6-8fc8-bcd623d8403b
 # savefig(plt_reps,"C:\\Users\\yiran\\Downloads\\"*"cutoff_rep_4.png")
 
@@ -146,19 +139,9 @@ savefig(plt_reps,sav_path * "/Will_vort_cut$(cut)_reps_"*lpad(j,3,"0")*".pdf")
 # savefig(plt_reps,sav_path * "/Combo"*lpad(j,3,"0")*".png")
 # end;
 
-# ╔═╡ 909d5412-7748-4c7c-bbd5-24968620d008
-PH_neg_diag = plot(PH_neg,
-		xlims=(-50,50), 
-		ylims=(-50,50))
-
 # ╔═╡ 4cccd339-80bb-4612-a28f-c312fc4c8fbb
 # #savefig(PH_neg_diag,PHneg_sav_path * "/Will_vort_cut$(cut)_PHneg_"*lpad(j,3,"0")*".pdf")
 # savefig(PH_neg_diag, "C:\\Users\\yiran\\Downloads" * "\\PH_neg_diag_" * "P"* string(panel) * "C" * string(case) * "_Combo"*lpad(j,3,"0")*".png")
-
-# ╔═╡ 7f93214f-5a6f-4802-8720-e2e8d0d61674
-PH_pos_diag = plot(PH_pos,
-		xlims=(-50,50), 
-		ylims=(-50,50))
 
 # ╔═╡ 4a18a195-83f6-4982-97ac-45994b60ccf4
  # savefig(PH_pos_diag,"C:\\Users\\yiran\\Downloads\\"*"cutoff_PD_4.png")
@@ -181,12 +164,6 @@ PH_pos_diag = plot(PH_pos,
 #     	end
 # 	end
 # end;
-
-# ╔═╡ b6ecc458-cd12-408f-aa0c-efccde6ad10f
-@show(PH_pos[1])
-
-# ╔═╡ 0763190c-24c8-4127-95f3-574de51ac6f8
-@show(PH_neg[1])
 
 # ╔═╡ 65c28246-9da7-495d-8ec6-31c0525f93d0
 # swapping birth / death indexes for persistence diagrams
@@ -211,17 +188,58 @@ PH_pos_diag = plot(PH_pos,
 # # @show(neg_interval)
 # end;
 
-# ╔═╡ b81b2591-f530-40c1-baff-d1e1a2082db2
-@show(PH_neg[1])
-
-# ╔═╡ 7ba5ef10-a135-48de-82fb-e1e3bcc6464e
-@show(PH_pos[1])
-
 # ╔═╡ 68b871e1-b5d5-4fb0-99f4-6eada1608415
 @show(birth_neg)
 
 # ╔═╡ c2b59ddc-1978-4ef7-a51a-f873e4327b73
 @show(death_neg)
+
+# ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
+"""
+Fetch the X,Y,vorticity from the stored files.
+"""
+function retrieve_snapshot( idx, panel_n )
+	cd(vort_path)
+	matvars = matread(vort_path * readdir(vort_path)[idx])
+	vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
+	X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
+	Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
+	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
+end
+
+# ╔═╡ a3288b63-fb14-4dbe-aa9d-8e630adf5096
+begin
+	X,Y,vorticity = retrieve_snapshot(j, panel)
+end;
+
+# ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
+PH_neg, PH_pos = process_snapshots(vorticity)
+
+
+# ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
+@show(PH_neg[1])
+
+# ╔═╡ 909d5412-7748-4c7c-bbd5-24968620d008
+PH_neg_diag = plot(PH_neg,
+		xlims=(-50,50), 
+		ylims=(-50,50))
+
+# ╔═╡ 7f93214f-5a6f-4802-8720-e2e8d0d61674
+PH_pos_diag = plot(PH_pos,
+		xlims=(-50,50), 
+		ylims=(-50,50))
+
+# ╔═╡ b6ecc458-cd12-408f-aa0c-efccde6ad10f
+@show(PH_pos[1])
+
+# ╔═╡ 0763190c-24c8-4127-95f3-574de51ac6f8
+@show(PH_neg[1])
+
+# ╔═╡ b81b2591-f530-40c1-baff-d1e1a2082db2
+@show(PH_neg[1])
+
+# ╔═╡ 7ba5ef10-a135-48de-82fb-e1e3bcc6464e
+@show(PH_pos[1])
 
 # ╔═╡ 77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
 begin
@@ -233,24 +251,6 @@ begin
 	@show(plt_flip)
 	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
 end
-
-# ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
-"""
-Fetch the X,Y,vorticity from the stored files.
-"""
-function retrieve_snapshot( idx, panel_n )
-	cd(vort_path)
-	matvars = matread(vort_path * fdir[idx])
-	vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
-	X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
-	Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
-	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
-end
-
-# ╔═╡ a3288b63-fb14-4dbe-aa9d-8e630adf5096
-begin
-	X,Y,vorticity = retrieve_snapshot(j, panel)
-end;
 
 # ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
 """
@@ -581,6 +581,10 @@ PH1_neg, PH1_pos = process_snapshot(1, panel, cut)
 
 
 # ╔═╡ 97c06931-82dd-43a5-826a-2e3a66f8a707
+"""
+Compute the distance dtype between two persistent diagrams.
+Supported dtype = Bottleneck() or Wasserstein()
+"""
 function distance( dtype, PH_A, PH_B)
 
 	PD_A = PersistenceDiagram.(PH_A)
@@ -2343,21 +2347,19 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═f2f42943-b95b-4b32-83a6-421b7f97f6c0
+# ╠═43e81d74-37d8-4574-b06e-a57be04fe6be
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
+# ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
+# ╠═fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
 # ╠═c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
-# ╠═49f213e0-316d-4aa9-9af2-50f4d074739c
-# ╠═309ec77f-6271-485f-bc63-bb3004f453ce
-# ╠═3636dc1c-32b0-4671-85a3-7d59aa085410
-# ╟─6d9a97ca-d2a5-4cee-a667-2a3d084c486c
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
 # ╠═40de9c62-98c7-45fa-a332-7a9b374c7cfe
 # ╠═f777ae38-3aa2-4ec0-a6c5-1840b4133a20
-# ╠═c7dedf0b-2528-47f9-8a88-1ec870a84734
 # ╠═667239bc-6a2a-4961-b8ce-23f2c3960b90
 # ╠═f2958c17-b24f-4b75-a62c-875f3ff6550d
 # ╠═917d2df6-e9ff-4f91-96af-ce6e32c68624
