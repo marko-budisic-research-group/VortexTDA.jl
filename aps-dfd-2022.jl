@@ -30,6 +30,9 @@ end
 # ╔═╡ fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 using PlutoUI
 
+# ╔═╡ f2f42943-b95b-4b32-83a6-421b7f97f6c0
+
+
 # ╔═╡ 523b6671-00c3-45c8-92ba-f8540829dcd7
 begin
 	panel = 1
@@ -81,7 +84,7 @@ begin
 end
 
 # ╔═╡ 49f213e0-316d-4aa9-9af2-50f4d074739c
-j = 1
+@bind j  Slider(1:25)
 #@bind j Clock(interval=1,max_value = 25)
 
 # ╔═╡ 309ec77f-6271-485f-bc63-bb3004f453ce
@@ -95,35 +98,6 @@ begin
 	fdir=readdir(vort_path)
 	i = fdir[j]
 end;
-
-# ╔═╡ a3288b63-fb14-4dbe-aa9d-8e630adf5096
-begin
-	matvars = matread(vort_path * fdir[j])
-    vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel]:end-2,5:end-4]) 
-	# 73 x 37 transpose, originally 81 x 53
-    X = matvars["X_Mat"][leftcut[panel]:end-2,1] / panelc[panel]
-	# 37 x 1 Float64, nondimensionalizes X
-    Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel]
-	# 73 x 1 Float64, nondimensionalizes Y
-end;
-
-# ╔═╡ bd59405d-3d5f-41c9-84ff-4cfdceaf6551
-
-
-# ╔═╡ b1f40b13-d68d-47c0-b0ed-d5ca9a074f68
-begin
-	neg_v = ones(size(vorticity)[1]+2,size(vorticity)[2]+2)*Inf
-	neg_v[2:end-1,2:end-1] = -vorticity
-	# minimums become maximums
-	CubCom_neg = Cubical(neg_v)
-end;
-
-# ╔═╡ b3c8dc02-3ecf-48d0-8deb-775da2bd11b1
-begin
-	pos_v = ones(size(vorticity)[1]+2,size(vorticity)[2]+2)*Inf
-	pos_v[2:end-1,2:end-1] = vorticity
-	CubCom_pos = Cubical(pos_v)
-end
 
 # ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
 PH_neg = ripserer(CubCom_neg, cutoff=cut, reps=true, alg=:homology);
@@ -272,6 +246,11 @@ function retrieve_snapshot( idx, panel_n )
 	Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
 	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
 end
+
+# ╔═╡ a3288b63-fb14-4dbe-aa9d-8e630adf5096
+begin
+	X,Y,vorticity = retrieve_snapshot(j, panel)
+end;
 
 # ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
 """
@@ -555,8 +534,13 @@ end;
 begin
 	for(cidx,interval) in enumerate(PH_pos[2])
 		pindex = vertices.(interval.representative)
+		@show cidx
 		for nelement in pindex
-			plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]], Yy[[nelement[1][1],nelement[2][1]]];linewidth=2,color=:black,palette=:Set1_9)
+			xval = Xx[[nelement[1][2],nelement[2][2]]]
+			yval = Yy[[nelement[1][1],nelement[2][1]]]
+			@show xval,yval
+			plot!(plt_reps, xval, yval;
+				linewidth=10,color=:green,palette=:Set1_9)
 		end
 	end
 end;
@@ -610,6 +594,7 @@ end
 begin
 	PHA_neg, PHA_pos = process_snapshot(1, panel, cut)
 	PHB_neg, PHB_pos = process_snapshot(2, panel, cut)
+	@show typeof(PHA_neg)
 	distance( Bottleneck(), PHA_neg, PHB_neg )
 end
 
@@ -621,51 +606,18 @@ begin
 	# for sl in 1:length(fdir)
 	# end
 	sl2 = j + 1
-	#for sl2 in 1:length(fdir)
-		cd(vort_path)
-		matvars2 = matread(vort_path * fdir[sl2])
-		vorticity2 = transpose(matvars["Omega_z_PA"][leftcut[panel]:end-2,5:end-4])
-		X2 = matvars["X_Mat"][leftcut[panel]:end-2,1] / panelc[panel]
-		Y2 = matvars["Y_Mat"][1,5:end-4] / panelc[panel]
-		delta_x2 = (X2[3]-X2[1])/2
-		delta_y2 = (Y2[3]-Y2[1])/2
-		mid2 = append!( [X2[1]-delta_x2], X2 )
-		Xx2 = append!(mid2, [X2[end]+delta_x2])
-		mid2 = append!( [Y2[1]-delta_y2], Y2 )
-		Yy2 = append!(mid2, [Y2[end]+delta_y2])
-		vort2 = zeros(size(vorticity2)[1]+2,size(vorticity2)[2]+2)
-		vort2[2:end-1,2:end-1] = vorticity2
-		neg_v2 = ones(size(vorticity2)[1]+2,size(vorticity2)[2]+2)*Inf
-		neg_v2[2:end-1,2:end-1] = -vorticity2
+	PH_neg2, PH_pos2 = process_snapshot(j+1, panel, cut)
 
-		CubCom_neg2 = Cubical(neg_v2)
-		pos_v2 = ones(size(vorticity2)[1]+2,size(vorticity2)[2]+2)*Inf
-		pos_v2[2:end-1,2:end-1] = vorticity2
-		CubCom_pos2 = Cubical(pos_v2)
-		PH_neg2 = ripserer(CubCom_neg2, cutoff=cut, reps=true, alg=:homology);
-		PH_pos2 = ripserer(CubCom_pos2, cutoff=cut, reps=true, alg=:homology);
-		
-	pos1_H0 = PersistenceDiagram(PH_pos[1])
-	pos1_H1 = PersistenceDiagram(PH_pos[2])
-	neg1_H0 = PersistenceDiagram(PH_neg[1])
-	neg1_H1 = PersistenceDiagram(PH_neg[2])
+	bottlepos_H0 = distance( Bottleneck(), PH_pos, PH_pos2 )
+	bottlepos_H0 = distance( Bottleneck(), PH_neg, PH_neg2 )
+	wasserpos_H0 = distance( Wasserstein(), PH_pos, PH_pos2 )
+	wasserpos_H0 = distance( Wasserstein(), PH_neg, PH_neg2 )
 
 
-	pos2_H0 = PersistenceDiagram(PH_pos2[1])
-	pos2_H1 = PersistenceDiagram(PH_pos2[2])
-	neg2_H0 = PersistenceDiagram(PH_neg2[1])
-	neg2_H1 = PersistenceDiagram(PH_neg2[2])
-
-	bottlepos_H0 = Bottleneck()(pos1_H0, pos2_H0; matching = false)
-	#bottlepos_H1 = Bottleneck()(pos1_H1, pos2_H1; matching = true)
-	
-	bottleneg_H0 = Bottleneck()(neg1_H0, neg2_H0; matching = false)
-	#bottleneg_H1 = Bottleneck()(neg1_H1, neg2_H1; matching = true)
-
-	wasspos_H0 = Wasserstein()(pos1_H0, pos2_H0; matching = false)
+	# wasspos_H0 = Wasserstein()(pos1_H0, pos2_H0; matching = false)
 	#wasspos_H1 = Wasserstein()(pos1_H1, pos2_H1; matching = true)
 
-	wassneg_H0 = Wasserstein()(neg1_H0, neg2_H0; matching = false)
+	# wassneg_H0 = Wasserstein()(neg1_H0, neg2_H0; matching = false)
 	#wassneg_H1 = Wasserstein()(neg1_H1, neg2_H1; matching = true)
 
 	# plt_bH0pos = plot(bottlepos_H0; title = "Bottleneck H0 Pos: $j - $sl2", xlims=(-50,50), ylims=(-50,50))
@@ -687,9 +639,6 @@ begin
 	
 end;
 
-# ╔═╡ 77ace834-7174-462b-9ea9-85686cbf70eb
-@show(pos2_H0)
-
 # ╔═╡ 785ca952-ca75-4d18-a51a-15d8898af15b
 @show(bottlepos_H0)
 
@@ -706,7 +655,7 @@ end;
 # @show(wasspos_H1)
 
 # ╔═╡ 2a92c416-2095-43c5-bffd-b5cc1c0f70a2
-plot(PH_pos[1])
+plot(PH_pos[2])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2394,6 +2343,7 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
+# ╠═f2f42943-b95b-4b32-83a6-421b7f97f6c0
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
@@ -2406,9 +2356,6 @@ version = "1.4.1+0"
 # ╟─6d9a97ca-d2a5-4cee-a667-2a3d084c486c
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
 # ╠═40de9c62-98c7-45fa-a332-7a9b374c7cfe
-# ╠═bd59405d-3d5f-41c9-84ff-4cfdceaf6551
-# ╠═b1f40b13-d68d-47c0-b0ed-d5ca9a074f68
-# ╠═b3c8dc02-3ecf-48d0-8deb-775da2bd11b1
 # ╠═f777ae38-3aa2-4ec0-a6c5-1840b4133a20
 # ╠═c7dedf0b-2528-47f9-8a88-1ec870a84734
 # ╠═667239bc-6a2a-4961-b8ce-23f2c3960b90
@@ -2450,7 +2397,6 @@ version = "1.4.1+0"
 # ╠═97c06931-82dd-43a5-826a-2e3a66f8a707
 # ╠═32c0e73e-4b7e-4dda-92cc-312d0762458c
 # ╠═4ac04dfc-1927-4e5c-be99-2ec883b9e97f
-# ╠═77ace834-7174-462b-9ea9-85686cbf70eb
 # ╠═785ca952-ca75-4d18-a51a-15d8898af15b
 # ╠═71a4ab9a-d8e5-4229-a770-f556c32f215c
 # ╠═9d45e2f8-83f5-42ea-ba53-7cc05b21f83a
