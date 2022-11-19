@@ -135,7 +135,7 @@ begin
 	pos_v = ones(size(vorticity)[1]+2,size(vorticity)[2]+2)*Inf
 	pos_v[2:end-1,2:end-1] = vorticity
 	CubCom_pos = Cubical(pos_v)
-end;
+end
 
 # ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
 PH_neg = ripserer(CubCom_neg, cutoff=cut, reps=true, alg=:homology);
@@ -542,35 +542,41 @@ begin
 	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
 end
 
+# ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
+"""
+Fetch the X,Y,vorticity from the stored files.
+"""
+function retrieve_snapshot( idx, panel_n )
+	cd(vort_path)
+	matvars = matread(vort_path * fdir[idx])
+	vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
+	X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
+	Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
+	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
+end
+
 # ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
-function pad_by_value(input, value, n_pixels=1)
+"""
+Pad the field by frame of desired width containing specific value.
+"""
+function pad_by_value(input, value=Inf, n_pixels=1)
 		output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
 		output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
-
 end
 
 # ╔═╡ 6080a86a-9149-4174-927a-cc227b97f7a7
+"""
+Compute Persistent Homology of sub/superlevel sets for desired panel.
+"""
 function process_snapshot( idx, panel_n, cutoff )
-		cd(vort_path)
-		matvars = matread(vort_path * fdir[idx])
-		vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
-		X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
-		Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
-		delta_x2 = (X[3]-X[1])/2
-		delta_y2 = (Y[3]-Y[1])/2
-		mid2 = append!( [X[1]-delta_x2], X )
-		Xx2 = append!(mid2, [X[end]+delta_x2])
-		mid2 = append!( [Y[1]-delta_y2], Y )
-		Yy2 = append!(mid2, [Y[end]+delta_y2])
-		vort = zeros(size(vorticity)[1]+2,size(vorticity)[2]+2)
-		vort[2:end-1,2:end-1] = vorticity
-		neg_v = ones(size(vorticity)[1]+2,size(vorticity)[2]+2)*Inf
-		neg_v[2:end-1,2:end-1] = -vorticity
 
-		CubCom_neg2 = Cubical(neg_v)
+	X,Y,vorticity = retrieve_snapshot(idx, panel_n)
 
-		PH_pos = ripserer( Cubical( pad_by_value( vorticity, Inf) ), cutoff=cutoff, reps=true, alg=:homology )
-		PH_neg = ripserer( Cubical( pad_by_value( -vorticity, Inf) ), cutoff=cutoff, reps=true, alg=:homology )
+	vorticity = pad_by_value(vorticity)
+
+
+	PH_pos = ripserer( Cubical( vorticity ), cutoff=cutoff, reps=true, alg=:homology )
+	PH_neg = ripserer( Cubical( -vorticity ), cutoff=cutoff, reps=true, alg=:homology )
 
 	return PH_neg, PH_pos
 
@@ -2427,6 +2433,7 @@ version = "1.4.1+0"
 # ╠═68b871e1-b5d5-4fb0-99f4-6eada1608415
 # ╠═c2b59ddc-1978-4ef7-a51a-f873e4327b73
 # ╠═77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
+# ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═6080a86a-9149-4174-927a-cc227b97f7a7
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═47d44aca-3fa5-486f-981f-73c402909c4e
