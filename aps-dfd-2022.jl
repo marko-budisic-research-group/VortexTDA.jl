@@ -49,10 +49,14 @@ md"""
 """
 
 # ╔═╡ 523b6671-00c3-45c8-92ba-f8540829dcd7
-## Markdonw
 begin
 	panel = 1
-	case = 1
+	CaseToFile = Dict( 
+		:Heaving => 1,
+		:Pitching => 2,
+		:HeavingAndPitching => 3
+	)
+	caselabel = :Heaving
 	clevel = 15
 	panelc = [0.0505 0.0505 0.0505 0.0505]; #panel dimensions in graph between -0.0505 <= x <= 0.0505 and -0.0505 <= y <= 0.0505
 	leftcut = [24 13 10 15]
@@ -67,33 +71,30 @@ md"""
 """
 Paths correspond to Alemni's folder.
 """
-function alemnis_path()
+function alemnis_path(panelcase)
 	toplevel = raw"C:\\Users\\yiran\\OneDrive\\Documents\\Research\\TDA\\raw_data\\Will"
-
-	panelcase = "P$(panel)C$(case)\\"
 	
-	vort_path = toplevel * "\\mat_file\\" * panelcase
-	sav_path = toplevel * "\\old_results\\"* panelcase 
+	vort_path = joinpath( toplevel,"mat_file" , panelcase)
+	sav_path = joinpath( toplevel, "old_results", panelcase )
 	vort_path, sav_path
 end;
 
 # ╔═╡ 4abde889-f80d-431c-9a78-4a53d70f4727
-function markos_path()
+function markos_path(panelcase)
 	toplevel = raw"/Volumes/GoogleDrive/.shortcut-targets-by-id/1U-9WSU_a1YjWMmjCKhqZLiC6Rha4kesp/GreenYiran/will"
-
-	panelcase = "P$(panel)C$(case)/"
 	
-	vort_path = toplevel * "/data/" * panelcase
-	sav_path = toplevel * "/results/"* panelcase 
+	vort_path = joinpath(toplevel,"data",panelcase)
+	sav_path = joinpath(toplevel,"results",panelcase)
 	return vort_path, sav_path
 end;
 
 # ╔═╡ c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 begin
-	vort_path, sav_path = alemnis_path()
+	panelcase = "P$(panel)C$(CaseToFile[caselabel])"
+	vort_path, sav_path = alemnis_path(panelcase)
 
 	if !( isdir(vort_path) && isdir(sav_path) )
-		vort_path, sav_path = markos_path()
+		vort_path, sav_path = markos_path(panelcase)
 	end
 
 	if !( isdir(vort_path) && isdir(sav_path) )
@@ -102,6 +103,27 @@ begin
 	@show vort_path
 	@show sav_path
 end;
+
+# ╔═╡ 56bd1c69-2d1e-4cd6-9603-7d986512f215
+md"""
+# Visualize a single snapshot
+"""
+
+# ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
+"""
+Plot vorticity field as a red/blue heatmap.
+"""
+function display_vorticity(Xs,Ys,Vs,titlestring="")
+
+	plot_handle = heatmap(Xs,Ys, Vs; title=titlestring,
+		fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
+		colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
+		background_color = :transparent, 
+		clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
+		size=(600,800), foreground_color = :black, dpi=300
+	);
+	return plot_handle
+end
 
 # ╔═╡ f2958c17-b24f-4b75-a62c-875f3ff6550d
 
@@ -200,7 +222,7 @@ Fetch the X,Y,vorticity from the stored files.
 """
 function retrieve_snapshot( idx, panel_n )
 	cd(vort_path)
-	matvars = matread(vort_path * readdir(vort_path)[idx])
+	matvars = matread(joinpath( vort_path, readdir(vort_path)[idx] ))
 	vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
 	X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
 	Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
@@ -212,8 +234,38 @@ begin
 	X,Y,vorticity = retrieve_snapshot(j, panel)
 end;
 
+# ╔═╡ 688f7320-b1ff-44f6-90ac-17665ea52bce
+display_vorticity(X,Y,vorticity,"$(caselabel) : snapshot = $(j)")
+
+# ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
+"""
+Pad the field by frame of desired width containing specific value.
+"""
+function pad_by_value(input, value=Inf, n_pixels=1)
+		output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
+		output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
+end
+
+# ╔═╡ 6080a86a-9149-4174-927a-cc227b97f7a7
+"""
+Compute Persistent Homology of sub/superlevel sets for desired panel.
+"""
+function process_snapshot( idx, panel_n, cutoff )
+
+	X,Y,vorticity = retrieve_snapshot(idx, panel_n)
+
+	vorticity = pad_by_value(vorticity)
+
+
+	PH_pos = ripserer( Cubical( vorticity ), cutoff=cutoff, reps=true, alg=:homology )
+	PH_neg = ripserer( Cubical( -vorticity ), cutoff=cutoff, reps=true, alg=:homology )
+
+	return PH_neg, PH_pos
+
+end
+
 # ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
-PH_neg, PH_pos = process_snapshots(vorticity)
+PH_neg, PH_pos = process_snapshot(vorticity)
 
 
 # ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
@@ -250,33 +302,6 @@ begin
 			ylims=(-50,50), markercolor=:blue)
 	@show(plt_flip)
 	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
-end
-
-# ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
-"""
-Pad the field by frame of desired width containing specific value.
-"""
-function pad_by_value(input, value=Inf, n_pixels=1)
-		output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
-		output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
-end
-
-# ╔═╡ 6080a86a-9149-4174-927a-cc227b97f7a7
-"""
-Compute Persistent Homology of sub/superlevel sets for desired panel.
-"""
-function process_snapshot( idx, panel_n, cutoff )
-
-	X,Y,vorticity = retrieve_snapshot(idx, panel_n)
-
-	vorticity = pad_by_value(vorticity)
-
-
-	PH_pos = ripserer( Cubical( vorticity ), cutoff=cutoff, reps=true, alg=:homology )
-	PH_neg = ripserer( Cubical( -vorticity ), cutoff=cutoff, reps=true, alg=:homology )
-
-	return PH_neg, PH_pos
-
 end
 
 # ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
@@ -2357,8 +2382,11 @@ version = "1.4.1+0"
 # ╠═c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
+# ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
 # ╠═40de9c62-98c7-45fa-a332-7a9b374c7cfe
+# ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
+# ╠═688f7320-b1ff-44f6-90ac-17665ea52bce
 # ╠═f777ae38-3aa2-4ec0-a6c5-1840b4133a20
 # ╠═667239bc-6a2a-4961-b8ce-23f2c3960b90
 # ╠═f2958c17-b24f-4b75-a62c-875f3ff6550d
