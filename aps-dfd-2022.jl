@@ -107,18 +107,6 @@ begin
 	# 73 x 1 Float64, nondimensionalizes Y
 end;
 
-# ╔═╡ 40de9c62-98c7-45fa-a332-7a9b374c7cfe
-begin
-	delta_x = (X[3]-X[1])/2
-	delta_y = (Y[3]-Y[1])/2
-	mid = append!( [X[1]-delta_x], X )
-	Xx = append!(mid, [X[end]+delta_x])
-	mid = append!( [Y[1]-delta_y], Y )
-	Yy = append!(mid, [Y[end]+delta_y])
-	vort = zeros(size(vorticity)[1]+2,size(vorticity)[2]+2)
-	vort[2:end-1,2:end-1] = vorticity
-end;
-
 # ╔═╡ bd59405d-3d5f-41c9-84ff-4cfdceaf6551
 
 
@@ -145,284 +133,17 @@ PH_neg = ripserer(CubCom_neg, cutoff=cut, reps=true, alg=:homology);
 PH_pos = ripserer(CubCom_pos, cutoff=cut, reps=true, alg=:homology);
 # Pesistent homology of vorticity (maxs = maxs)
 
-# ╔═╡ 667239bc-6a2a-4961-b8ce-23f2c3960b90
-begin
-	if case==1
-        plt_reps = heatmap(Xx,Yy,vort; title="Heaving",
-        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
-        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
-		background_color = :transparent, 
-        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
-        size=(600,800), foreground_color = :black, dpi=300
-        );
-	elseif case==2
-        plt_reps = heatmap(Xx,Yy,vort; title="Pitching",
-        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
-        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
-		background_color = :transparent, 
-        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
-        size=(600,800), foreground_color = :black, dpi=300
-        );
-	elseif case==3
-        plt_reps = heatmap(Xx,Yy,vort; title="Pitch + Heave",
-        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
-        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
-		background_color = :transparent, 
-		# xlims=(0,2.2), ylims=(-2.2,2.2)
-        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
-        size=(600,800), foreground_color = :black, dpi=300
-        );
-	end
-end;
-
 # ╔═╡ f2958c17-b24f-4b75-a62c-875f3ff6550d
 
 
-# ╔═╡ 917d2df6-e9ff-4f91-96af-ce6e32c68624
-begin
-	axis_index_neg = zeros(Int,(length(PH_neg[1]),2))
-	
-	for (cidx, interval) in enumerate(PH_neg[1])
-		     pindex = vertices.(interval.representative)
-				v_min, min_index = findmin(neg_v) 
-
-pindex = vertices.(interval.representative)
-		# @show(size(pos_v))
-		
-		#pindex = [temp1[1] for temp1 in pindex]
-			pindex = first.(pindex)
-
-		v_min, temp_index = findmin(neg_v[pindex])
-		 min_index = pindex[temp_index]
-@show(min_index)
-		
-		axis_index_neg[cidx,1] = min_index[2]
-        axis_index_neg[cidx,2] = min_index[1]
-			
-        plot!(plt_reps, (Xx[axis_index_neg[cidx,1]],Yy[axis_index_neg[cidx,2]]),
-			seriestype = :scatter; 
-			markersize=5,
-			#markercolor=:yellow, red
-			markercolor=:white, 
-			palette=:Set1_9)
-	end
-	##################################################
-	# axis_index_neg = zeros(Int,(length(PH_neg[1]),2))
-	# for (interval, cidx) in zip(PH_neg[1],1:length(PH_neg[1]))
- #        v_min = -minimum(vort)
- #        pindex = vertices.(interval.representative)
- #        for (nelement,inum) in zip(pindex, 1:length(pindex))
- #            temp = collect(nelement)[1]
- #            cn = neg_v[temp[1],temp[2]]
- #            if cn<v_min
- #                v_min=cn
- #                axis_index_neg[cidx,1] = temp[2]
- #                axis_index_neg[cidx,2] = temp[1]
- #            else
- #            end
- #        end
- #        plot!(plt_reps, (Xx[axis_index_neg[cidx,1]],Yy[axis_index_neg[cidx,2]]),
-	# 		seriestype = :scatter; 
-	# 		markersize=5,
-	# 		#markercolor=:yellow, 
-	# 		markercolor=:white, 
-	# 		palette=:Set1_9)
-	# end
-	##################################################
-		# make sure index is integer and not a float 
-	# N x 2 matrix initialized with zeros, where N is length of identified persis. points
-		# for each interval in H0 persistence, with interval identifier cidx
-		# scans over each persistence interval 
-        # v_min = -minimum(vort) - not needed 
-		# assuring this isnt the last value found through loop 
-		# index of minimum element can be taken directly 
-		
-		# assigns a minimum vorticity value from the vorticity data matrix. in this case, v_min is the maximum vorticity reached once flipped
-   
-		# (interval.representative) -- gets the representative vertex attached to interval. 
-		# the most persistent point is the last point, i.e. PH_neg[1][end]
-		# make sure that this is the same indexing for H1 
-       # for (nelement,inum) in zip(pindex, 1:length(pindex))
-
-		
-		# for nelement in pindex
-		# 	# for each element of the matrix containing vertices for the H0 representatives, scan through each element
-  #           nelement = nelement[1]
-		# 	# taking the first element inside of the array, creating a scalar out of a vector of one element 
-			 
-		# 	# ^ creates two element vector of vertex, takes first element 
-		# 	# assign a temporary matrix equal vertex index matrix, then assign temp to the vertex of the least persistent point
-  #           cn = neg_v[nelement]
-		# 	# assigns cn to neg_v value @ vertex 
-  #           if cn<v_min
-		# 		# trying to find smallest value in neg_v and take index 
-  #               v_min=cn
-		# 		# then current value is cn 
-		# 		# store index of value @ axis_index_neg 
-  #           else
-		# 		# otherwise 
-  #           end
-        #end
-	
-end;
-
 # ╔═╡ 1754b2dd-0ef8-4d68-8e30-1d8847c62299
 
-
-# ╔═╡ 75784082-b66e-472c-95a2-ae18249d4d2d
-begin
-	#This block identifies the H1 chains and scales/plots them on the actual heatmap
-	for (cidx, interval) in enumerate(PH_neg[2])
-		# for each interval in H0 persistence, with interval identifier cidx
-		# scans over each persistence interval
-        pindex = vertices.(interval.representative)
-		# (interval.representative) -- gets the representative cycle attached to interval in PH. 
-
-		# the most persistent cycle is the last cycle, i.e. PH_neg[2][end]
-
-		# vertices.(interval.representative) -- returns the edges (1-cube) of the chain that makes up the cycle
-        for nelement in pindex
-		# for each edge element in the edge array
-            plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],nelement[2][1]]]; 
-			linewidth=2, 
-			# add to the plot a line that draws the representative to scale with the nondimensionalized Xx and Yy
-			#color=:orange, blue
-			color=:black,
-			palette=:Set1_9)
-        end
-	end
-	#############################################################
-	# for (interval, cidx) in zip(PH_neg[2],1:length(PH_neg[2]))
- #        pindex = vertices.(interval.representative)
- #        for nelement in pindex
- #            plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],nelement[2][1]]]; 
-	# 		linewidth=2, 
-	# 		#color=:orange,
-	# 		color=:black,
-	# 		palette=:Set1_9)
- #        end
-	# end
- end;
-
-# ╔═╡ 5e9d76b0-f5d6-491e-8c3e-690aea50bd9b
-begin
-	axis_index_pos = zeros(Int,(length(PH_pos[1]),2))
-		# N x 2 matrix initialized with zeros, where N is length of identified persis. points
-	for (cidx, interval) in enumerate(PH_pos[1])
-		pindex = vertices.(interval.representative)
-		# @show(size(pos_v))
-		
-		#pindex = [temp1[1] for temp1 in pindex]
-		#pindex = getindex.(pindex,1)
-		pindex = first.(pindex)
-		# gets first index of every element in pindex
-		#pos_v[pindex[:,1]]
-		#@show(length(pindex))		
-		#@show(pos_v[pindex])
-		v_min, temp_index = findmin(pos_v[pindex])
-		# @show(cidx)
-		 min_index = pindex[temp_index]
-		 axis_index_pos[cidx,1] = min_index[2]
-		 axis_index_pos[cidx,2] = min_index[1]
-		#cn = pos_v[nelement]
-		#if cn < v_min
-		#	v_min = cn
-			plot!(plt_reps,(Xx[axis_index_pos[cidx,1]], Yy[axis_index_pos[cidx,2]]), seriestype = :scatter; markersize = 5, markercolor=:white, palette=:Set1_9)
-		# #end red
-		# @show((Xx[axis_index_pos[cidx,1]], Yy[axis_index_pos[cidx,2]]))
-		# @show(axis_index_pos[cidx,1],axis_index_pos[cidx,2])
-	end
-end;
-##################################################
-# begin
-# axis_index_pos = zeros(Int,(length(PH_pos[1]),2))
-# 	for (interval, cidx) in zip(PH_pos[1],1:length(PH_pos[1]))
-#         v_min = maximum(vort)
-#         pindex = vertices.(interval.representative)
-#         for (nelement,inum) in zip(pindex, 1:length(pindex))
-#             temp = collect(nelement)[1]
-#             cn = pos_v[temp[1],temp[2]]
-#             if cn<v_min
-#                 v_min=cn
-#                 axis_index_pos[cidx,1] = temp[2]
-#             	axis_index_pos[cidx,2] = temp[1]
-#             else
-#             end
-# 		end
-# 		plot!(plt_reps, (Xx[axis_index_pos[cidx,1]],Yy[axis_index_pos[cidx,2]]),
-# 			seriestype = :scatter; 
-# 			markersize=5,
-# 			markercolor=:white, 
-# 			palette=:Set1_9)
-# 	end
-# end;
-##################################################
-	
-	#for (interval, cidx) in zip(PH_pos[1],1:length(PH_pos[1]))
-     #   v_min = maximum(vort)
-      #  pindex = vertices.(interval.representative)
-       # for (nelement,inum) in zip(pindex, 1:length(pindex))
-        #    temp = collect(nelement)[1]
-         #   cn = pos_v[temp[1],temp[2]]
-          #  if cn<v_min
-           #     v_min=cn
-            #    axis_index_pos[cidx,1] = temp[2]
-            #	axis_index_pos[cidx,2] = temp[1]
-           # else
-           # end
-	#	end
-	#	plot!(plt_reps, (Xx[axis_index_pos[cidx,1]],Yy[axis_index_pos[cidx,2]]),
-	#		seriestype = :scatter; 
-	#		markersize=5,
-	#		markercolor=:blue, 
-	#		palette=:Set1_9)
-#	end
-# end;
 
 # ╔═╡ 9fc515d6-c672-4482-83ad-d4bd2f1d7ab3
 
 
 # ╔═╡ 0e08d81a-e6c8-47d1-9d07-9c7fc2e89223
 
-
-# ╔═╡ c72aea54-b31b-4a16-9c24-abaeb6becac6
-begin
-	for(cidx,interval) in enumerate(PH_pos[2])
-		pindex = vertices.(interval.representative)
-		for nelement in pindex
-			plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]], Yy[[nelement[1][1],nelement[2][1]]];linewidth=2,color=:black,palette=:Set1_9)
-		end
-	end
-end;
-# #########################################################
-# begin
-# for (interval, cidx) in zip(PH_pos[2],1:length(PH_pos[2]))
-# 		pindex = vertices.(interval.representative)
-#     	for nelement in pindex
-#         	plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],
-# 			nelement[2][1]]]; 
-# 			linewidth=2, 
-# 			#color=:gray,
-# 			color=:black,
-# 			palette=:Set1_9)
-#     	end
-# 	end
-# end;
-#########################################################
-
-#begin
-#	for (interval, cidx) in zip(PH_pos[2],1:length(PH_pos[2]))
-#		pindex = vertices.(interval.representative)
- #   	for nelement in pindex
-  #      	plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],
-	#		nelement[2][1]]]; 
-	#		linewidth=2, 
-			#color=:gray,
-	#		color=:red,
-	#		palette=:Set1_9)
-    #	end
-#	end
-#end;
 
 # ╔═╡ 638de35e-0af5-4cbb-a16d-33efd1d9fe92
 # begin
@@ -436,9 +157,6 @@ end;
 
 # ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
 @show(PH_neg[1])
-
-# ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
-@show(plt_reps)
 
 # ╔═╡ a3d6464f-2349-49b6-8fc8-bcd623d8403b
 # savefig(plt_reps,"C:\\Users\\yiran\\Downloads\\"*"cutoff_rep_4.png")
@@ -581,6 +299,296 @@ function process_snapshot( idx, panel_n, cutoff )
 	return PH_neg, PH_pos
 
 end
+
+# ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
+"""
+Pad X/Y grid by appropriate values 
+"""
+function pad_grid(X,Y)
+	delta_x = (X[3]-X[1])/2 # why not X[2]-X[1]?
+	delta_y = (Y[3]-Y[1])/2
+	Xx = append!([X[1]-delta_x], X, [X[end]+delta_x])
+	Yy = append!([Y[1]-delta_y], Y, [Y[end]+delta_y])
+	return Xx, Yy
+end
+	
+
+# ╔═╡ 40de9c62-98c7-45fa-a332-7a9b374c7cfe
+begin
+	Xx, Yy = pad_grid(X,Y)
+	vort = zeros(size(vorticity)[1]+2,size(vorticity)[2]+2)
+	vort[2:end-1,2:end-1] = vorticity
+end;
+
+# ╔═╡ 667239bc-6a2a-4961-b8ce-23f2c3960b90
+begin
+	if case==1
+        plt_reps = heatmap(Xx,Yy,vort; title="Heaving",
+        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
+        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
+		background_color = :transparent, 
+        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
+        size=(600,800), foreground_color = :black, dpi=300
+        );
+	elseif case==2
+        plt_reps = heatmap(Xx,Yy,vort; title="Pitching",
+        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
+        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
+		background_color = :transparent, 
+        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
+        size=(600,800), foreground_color = :black, dpi=300
+        );
+	elseif case==3
+        plt_reps = heatmap(Xx,Yy,vort; title="Pitch + Heave",
+        fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
+        colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
+		background_color = :transparent, 
+		# xlims=(0,2.2), ylims=(-2.2,2.2)
+        clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
+        size=(600,800), foreground_color = :black, dpi=300
+        );
+	end
+end;
+
+# ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
+@show(plt_reps)
+
+# ╔═╡ 917d2df6-e9ff-4f91-96af-ce6e32c68624
+begin
+	axis_index_neg = zeros(Int,(length(PH_neg[1]),2))
+	
+	for (cidx, interval) in enumerate(PH_neg[1])
+		     pindex = vertices.(interval.representative)
+				v_min, min_index = findmin(neg_v) 
+
+pindex = vertices.(interval.representative)
+		# @show(size(pos_v))
+		
+		#pindex = [temp1[1] for temp1 in pindex]
+			pindex = first.(pindex)
+
+		v_min, temp_index = findmin(neg_v[pindex])
+		 min_index = pindex[temp_index]
+@show(min_index)
+		
+		axis_index_neg[cidx,1] = min_index[2]
+        axis_index_neg[cidx,2] = min_index[1]
+			
+        plot!(plt_reps, (Xx[axis_index_neg[cidx,1]],Yy[axis_index_neg[cidx,2]]),
+			seriestype = :scatter; 
+			markersize=5,
+			#markercolor=:yellow, red
+			markercolor=:white, 
+			palette=:Set1_9)
+	end
+	##################################################
+	# axis_index_neg = zeros(Int,(length(PH_neg[1]),2))
+	# for (interval, cidx) in zip(PH_neg[1],1:length(PH_neg[1]))
+ #        v_min = -minimum(vort)
+ #        pindex = vertices.(interval.representative)
+ #        for (nelement,inum) in zip(pindex, 1:length(pindex))
+ #            temp = collect(nelement)[1]
+ #            cn = neg_v[temp[1],temp[2]]
+ #            if cn<v_min
+ #                v_min=cn
+ #                axis_index_neg[cidx,1] = temp[2]
+ #                axis_index_neg[cidx,2] = temp[1]
+ #            else
+ #            end
+ #        end
+ #        plot!(plt_reps, (Xx[axis_index_neg[cidx,1]],Yy[axis_index_neg[cidx,2]]),
+	# 		seriestype = :scatter; 
+	# 		markersize=5,
+	# 		#markercolor=:yellow, 
+	# 		markercolor=:white, 
+	# 		palette=:Set1_9)
+	# end
+	##################################################
+		# make sure index is integer and not a float 
+	# N x 2 matrix initialized with zeros, where N is length of identified persis. points
+		# for each interval in H0 persistence, with interval identifier cidx
+		# scans over each persistence interval 
+        # v_min = -minimum(vort) - not needed 
+		# assuring this isnt the last value found through loop 
+		# index of minimum element can be taken directly 
+		
+		# assigns a minimum vorticity value from the vorticity data matrix. in this case, v_min is the maximum vorticity reached once flipped
+   
+		# (interval.representative) -- gets the representative vertex attached to interval. 
+		# the most persistent point is the last point, i.e. PH_neg[1][end]
+		# make sure that this is the same indexing for H1 
+       # for (nelement,inum) in zip(pindex, 1:length(pindex))
+
+		
+		# for nelement in pindex
+		# 	# for each element of the matrix containing vertices for the H0 representatives, scan through each element
+  #           nelement = nelement[1]
+		# 	# taking the first element inside of the array, creating a scalar out of a vector of one element 
+			 
+		# 	# ^ creates two element vector of vertex, takes first element 
+		# 	# assign a temporary matrix equal vertex index matrix, then assign temp to the vertex of the least persistent point
+  #           cn = neg_v[nelement]
+		# 	# assigns cn to neg_v value @ vertex 
+  #           if cn<v_min
+		# 		# trying to find smallest value in neg_v and take index 
+  #               v_min=cn
+		# 		# then current value is cn 
+		# 		# store index of value @ axis_index_neg 
+  #           else
+		# 		# otherwise 
+  #           end
+        #end
+	
+end;
+
+# ╔═╡ 75784082-b66e-472c-95a2-ae18249d4d2d
+begin
+	#This block identifies the H1 chains and scales/plots them on the actual heatmap
+	for (cidx, interval) in enumerate(PH_neg[2])
+		# for each interval in H0 persistence, with interval identifier cidx
+		# scans over each persistence interval
+        pindex = vertices.(interval.representative)
+		# (interval.representative) -- gets the representative cycle attached to interval in PH. 
+
+		# the most persistent cycle is the last cycle, i.e. PH_neg[2][end]
+
+		# vertices.(interval.representative) -- returns the edges (1-cube) of the chain that makes up the cycle
+        for nelement in pindex
+		# for each edge element in the edge array
+            plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],nelement[2][1]]]; 
+			linewidth=2, 
+			# add to the plot a line that draws the representative to scale with the nondimensionalized Xx and Yy
+			#color=:orange, blue
+			color=:black,
+			palette=:Set1_9)
+        end
+	end
+	#############################################################
+	# for (interval, cidx) in zip(PH_neg[2],1:length(PH_neg[2]))
+ #        pindex = vertices.(interval.representative)
+ #        for nelement in pindex
+ #            plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],nelement[2][1]]]; 
+	# 		linewidth=2, 
+	# 		#color=:orange,
+	# 		color=:black,
+	# 		palette=:Set1_9)
+ #        end
+	# end
+ end;
+
+# ╔═╡ 5e9d76b0-f5d6-491e-8c3e-690aea50bd9b
+begin
+	axis_index_pos = zeros(Int,(length(PH_pos[1]),2))
+		# N x 2 matrix initialized with zeros, where N is length of identified persis. points
+	for (cidx, interval) in enumerate(PH_pos[1])
+		pindex = vertices.(interval.representative)
+		# @show(size(pos_v))
+		
+		#pindex = [temp1[1] for temp1 in pindex]
+		#pindex = getindex.(pindex,1)
+		pindex = first.(pindex)
+		# gets first index of every element in pindex
+		#pos_v[pindex[:,1]]
+		#@show(length(pindex))		
+		#@show(pos_v[pindex])
+		v_min, temp_index = findmin(pos_v[pindex])
+		# @show(cidx)
+		 min_index = pindex[temp_index]
+		 axis_index_pos[cidx,1] = min_index[2]
+		 axis_index_pos[cidx,2] = min_index[1]
+		#cn = pos_v[nelement]
+		#if cn < v_min
+		#	v_min = cn
+			plot!(plt_reps,(Xx[axis_index_pos[cidx,1]], Yy[axis_index_pos[cidx,2]]), seriestype = :scatter; markersize = 5, markercolor=:white, palette=:Set1_9)
+		# #end red
+		# @show((Xx[axis_index_pos[cidx,1]], Yy[axis_index_pos[cidx,2]]))
+		# @show(axis_index_pos[cidx,1],axis_index_pos[cidx,2])
+	end
+end;
+##################################################
+# begin
+# axis_index_pos = zeros(Int,(length(PH_pos[1]),2))
+# 	for (interval, cidx) in zip(PH_pos[1],1:length(PH_pos[1]))
+#         v_min = maximum(vort)
+#         pindex = vertices.(interval.representative)
+#         for (nelement,inum) in zip(pindex, 1:length(pindex))
+#             temp = collect(nelement)[1]
+#             cn = pos_v[temp[1],temp[2]]
+#             if cn<v_min
+#                 v_min=cn
+#                 axis_index_pos[cidx,1] = temp[2]
+#             	axis_index_pos[cidx,2] = temp[1]
+#             else
+#             end
+# 		end
+# 		plot!(plt_reps, (Xx[axis_index_pos[cidx,1]],Yy[axis_index_pos[cidx,2]]),
+# 			seriestype = :scatter; 
+# 			markersize=5,
+# 			markercolor=:white, 
+# 			palette=:Set1_9)
+# 	end
+# end;
+##################################################
+	
+	#for (interval, cidx) in zip(PH_pos[1],1:length(PH_pos[1]))
+     #   v_min = maximum(vort)
+      #  pindex = vertices.(interval.representative)
+       # for (nelement,inum) in zip(pindex, 1:length(pindex))
+        #    temp = collect(nelement)[1]
+         #   cn = pos_v[temp[1],temp[2]]
+          #  if cn<v_min
+           #     v_min=cn
+            #    axis_index_pos[cidx,1] = temp[2]
+            #	axis_index_pos[cidx,2] = temp[1]
+           # else
+           # end
+	#	end
+	#	plot!(plt_reps, (Xx[axis_index_pos[cidx,1]],Yy[axis_index_pos[cidx,2]]),
+	#		seriestype = :scatter; 
+	#		markersize=5,
+	#		markercolor=:blue, 
+	#		palette=:Set1_9)
+#	end
+# end;
+
+# ╔═╡ c72aea54-b31b-4a16-9c24-abaeb6becac6
+begin
+	for(cidx,interval) in enumerate(PH_pos[2])
+		pindex = vertices.(interval.representative)
+		for nelement in pindex
+			plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]], Yy[[nelement[1][1],nelement[2][1]]];linewidth=2,color=:black,palette=:Set1_9)
+		end
+	end
+end;
+# #########################################################
+# begin
+# for (interval, cidx) in zip(PH_pos[2],1:length(PH_pos[2]))
+# 		pindex = vertices.(interval.representative)
+#     	for nelement in pindex
+#         	plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],
+# 			nelement[2][1]]]; 
+# 			linewidth=2, 
+# 			#color=:gray,
+# 			color=:black,
+# 			palette=:Set1_9)
+#     	end
+# 	end
+# end;
+#########################################################
+
+#begin
+#	for (interval, cidx) in zip(PH_pos[2],1:length(PH_pos[2]))
+#		pindex = vertices.(interval.representative)
+ #   	for nelement in pindex
+  #      	plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],
+	#		nelement[2][1]]]; 
+	#		linewidth=2, 
+			#color=:gray,
+	#		color=:red,
+	#		palette=:Set1_9)
+    #	end
+#	end
+#end;
 
 # ╔═╡ 47d44aca-3fa5-486f-981f-73c402909c4e
 PH1_neg, PH1_pos = process_snapshot(1, panel, cut)
@@ -2436,6 +2444,7 @@ version = "1.4.1+0"
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═6080a86a-9149-4174-927a-cc227b97f7a7
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
+# ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
 # ╠═47d44aca-3fa5-486f-981f-73c402909c4e
 # ╠═c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
 # ╠═97c06931-82dd-43a5-826a-2e3a66f8a707
