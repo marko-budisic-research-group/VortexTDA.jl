@@ -33,21 +33,10 @@ using PlutoUI
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
-# ╔═╡ e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╔═╡ f4f66a74-5a05-498a-b3db-b7973241429f
 md"""
-
 # Initial Setup
-
-Tune the following values:
-  - Snapshot number $(@bind j Slider(1:25, show_value=true))
-  - Topological noise cutoff $(@bind cut Slider(0:0.1:100, show_value = true))
 """
-
-# ╔═╡ a352efd1-b8ce-4dd4-826e-b08790ee7581
-
-
-# ╔═╡ 44642851-9f6e-42fd-981a-171043dbf10f
-
 
 # ╔═╡ a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 md"""
@@ -62,7 +51,6 @@ begin
 		:Pitching => 2,
 		:HeavingAndPitching => 3
 	)
-	caselabel = :Heaving
 	clevel = 15
 	panelc = [0.0505 0.0505 0.0505 0.0505]; #panel dimensions in graph between -0.0505 <= x <= 0.0505 and -0.0505 <= y <= 0.0505
 	leftcut = [24 13 10 15]
@@ -94,6 +82,20 @@ function markos_path(panelcase)
 	return vort_path, sav_path
 end;
 
+# ╔═╡ 56bd1c69-2d1e-4cd6-9603-7d986512f215
+md"""
+# Visualize a single snapshot
+"""
+
+# ╔═╡ e3d69201-3c69-4835-bc81-9c46ed86d8cf
+md"""
+Tune the following values:
+  - Autoplay snapshots $(@bind autoplay CheckBox(default=true))
+  - Topological noise cutoff $(@bind cut Slider(0:0.01:10, show_value = true, default=0.5))
+  - Plate motion $(@bind caselabel Select([:Heaving,:Pitching,:HeavingAndPitching]))
+
+"""
+
 # ╔═╡ c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 begin
 	panelcase = "P$(panel)C$(CaseToFile[caselabel])"
@@ -110,9 +112,19 @@ begin
 	@show sav_path
 end;
 
-# ╔═╡ 56bd1c69-2d1e-4cd6-9603-7d986512f215
+# ╔═╡ 7b157ef8-eb23-44b8-aed8-3c3673ab072e
+function snapshotselector(sel)
+	if sel
+		@bind j Clock(interval=1,max_value = 25,start_running=true)
+	else
+		@bind j Slider(1:25, show_value=true)
+	end
+end
+
+# ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
 md"""
-# Visualize a single snapshot
+  - Snapshot number $(snapshotselector(autoplay))
+
 """
 
 # ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
@@ -137,6 +149,15 @@ md"""
 
 """
 
+# ╔═╡ d08db7ab-f9aa-4052-b67a-63c336a74b0d
+function PH_of_snapshot( input, cutoff=0)
+	f(v) = ripserer( Cubical(v),
+		cutoff=cutoff, reps=true, alg=:homology )
+	PH_pos = f(input)
+	PH_neg = f(-input)
+	return PH_neg, PH_pos
+end
+
 # ╔═╡ 630acaf0-4b21-4ed7-893f-7eaf6ade2403
 md"""
 ## Extract the representatives
@@ -152,6 +173,11 @@ Calling `vertices()` on each element of PI.representative (syntax `.()` applies 
 
 """
 
+
+# ╔═╡ a975d268-2f5e-4d50-8cae-49eb0d4654d5
+md"""
+### $H_0$ representatives
+"""
 
 # ╔═╡ 8da5c1a0-ace0-4a67-944a-fa5b2922cbce
 """
@@ -226,9 +252,6 @@ function plotH0pointRepresentatives!(
 	plotH0pointRepresentatives( [rep,], args...; kwargs...)
 
 end 
-
-# ╔═╡ 1754b2dd-0ef8-4d68-8e30-1d8847c62299
-
 
 # ╔═╡ 9fc515d6-c672-4482-83ad-d4bd2f1d7ab3
 
@@ -331,40 +354,14 @@ function retrieve_snapshot( idx, panel_n )
 	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
 end
 
-# ╔═╡ a3288b63-fb14-4dbe-aa9d-8e630adf5096
-begin
-	X,Y,vorticity = retrieve_snapshot(j, panel)
-end;
-
-# ╔═╡ 205fe892-a6cf-4528-96d1-18bfdeda801a
-function process_snapshot( input, cutoff=0)
-	f(v) = ripserer( Cubical(v),
-		cutoff=cutoff, reps=true, alg=:homology )
-	PH_pos = f(input)
-	PH_neg = f(-input)
-	return PH_neg, PH_pos
-end
-
 # ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
 """
 Pad the field by frame of desired width containing specific value.
 """
 function pad_by_value(input, value=Inf, n_pixels=1)
-		output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
-		output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
-end
-
-# ╔═╡ 6080a86a-9149-4174-927a-cc227b97f7a7
-"""
-Compute Persistent Homology of sub/superlevel sets for desired panel.
-"""
-function process_snapshot( idx, panel_n, cutoff=0)
-
-	X,Y,vorticity = retrieve_snapshot(idx, panel_n)
-	vorticity = pad_by_value(vorticity)
-
-	return process_snapshot(vorticity, cutoff)
-
+	output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
+	output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
+	return output
 end
 
 # ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
@@ -380,161 +377,24 @@ function pad_grid(X,Y)
 end
 	
 
-# ╔═╡ 40de9c62-98c7-45fa-a332-7a9b374c7cfe
+# ╔═╡ a3288b63-fb14-4dbe-aa9d-8e630adf5096
 begin
+	X,Y,vorticity = retrieve_snapshot(j, panel)
 	Xx, Yy = pad_grid(X,Y)
-	vort = zeros(size(vorticity)[1]+2,size(vorticity)[2]+2)
-	vort[2:end-1,2:end-1] = vorticity
+	vort = pad_by_value(vorticity, Inf, 1)	
+	PH_neg, PH_pos = PH_of_snapshot(vort, cut);
 end;
 
-# ╔═╡ 688f7320-b1ff-44f6-90ac-17665ea52bce
-plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)")
-
-# ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
-PH_neg, PH_pos = process_snapshot(vort, cut)
-
-# ╔═╡ d08db7ab-f9aa-4052-b67a-63c336a74b0d
+# ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
-
-	vtxReps = getH0pointRepresentative.(PH_neg[1], :min)
-
-
-end
-
-
-# ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
-@show(PH_neg[1])
-
-# ╔═╡ 909d5412-7748-4c7c-bbd5-24968620d008
-PH_neg_diag = plot(PH_neg,
-		xlims=(-50,50), 
-		ylims=(-50,50))
-
-# ╔═╡ 7f93214f-5a6f-4802-8720-e2e8d0d61674
-PH_pos_diag = plot(PH_pos,
-		xlims=(-50,50), 
-		ylims=(-50,50))
-
-# ╔═╡ b6ecc458-cd12-408f-aa0c-efccde6ad10f
-@show(PH_pos[1])
-
-# ╔═╡ 0763190c-24c8-4127-95f3-574de51ac6f8
-@show(PH_neg[1])
-
-# ╔═╡ b81b2591-f530-40c1-baff-d1e1a2082db2
-@show(PH_neg[1])
-
-# ╔═╡ 7ba5ef10-a135-48de-82fb-e1e3bcc6464e
-@show(PH_pos[1])
-
-# ╔═╡ 77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
-begin
-	plt_flip = plot(PH_pos[1];
-			xlims=(-50,50), 
-			ylims=(-50,50), markercolor=:red)
-	plot!(plt_flip,neg_interval; xlims=(-50,50), 
-			ylims=(-50,50), markercolor=:blue)
-	@show(plt_flip)
-	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
-end
-
-# ╔═╡ fbcf171a-fd41-47b8-b08a-23c937b26647
-begin
+	plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)");	
 	neg_reps = getH0pointRepresentative.(PH_neg[1])
 	pos_reps = getH0pointRepresentative.(PH_pos[1])
 
 	plotH0pointRepresentatives!(pos_reps, plot_handle, Xx, Yy,markercolor=:magenta)
-	
 	plotH0pointRepresentatives!(neg_reps, plot_handle, Xx, Yy, markercolor=:green)
+	plot_handle
 end
-
-# ╔═╡ 917d2df6-e9ff-4f91-96af-ce6e32c68624
-function plotH0reps( plothandle, PH )
-	axis_index_neg = zeros(Int,(length(PH[1]),2))
-	
-	for (cidx, interval) in enumerate(PH[1])
-		     pindex = vertices.(interval.representative)
-				v_min, min_index = findmin(neg_v) 
-
-pindex = vertices.(interval.representative)
-		# @show(size(pos_v))
-		
-		#pindex = [temp1[1] for temp1 in pindex]
-			pindex = first.(pindex)
-
-		v_min, temp_index = findmin(neg_v[pindex])
-		 min_index = pindex[temp_index]
-@show(min_index)
-		
-		axis_index_neg[cidx,1] = min_index[2]
-        axis_index_neg[cidx,2] = min_index[1]
-			
-        plot!(plt_reps, (Xx[axis_index_neg[cidx,1]],Yy[axis_index_neg[cidx,2]]),
-			seriestype = :scatter; 
-			markersize=5,
-			#markercolor=:yellow, red
-			markercolor=:white, 
-			palette=:Set1_9)
-	end
-	##################################################
-	# axis_index_neg = zeros(Int,(length(PH_neg[1]),2))
-	# for (interval, cidx) in zip(PH_neg[1],1:length(PH_neg[1]))
- #        v_min = -minimum(vort)
- #        pindex = vertices.(interval.representative)
- #        for (nelement,inum) in zip(pindex, 1:length(pindex))
- #            temp = collect(nelement)[1]
- #            cn = neg_v[temp[1],temp[2]]
- #            if cn<v_min
- #                v_min=cn
- #                axis_index_neg[cidx,1] = temp[2]
- #                axis_index_neg[cidx,2] = temp[1]
- #            else
- #            end
- #        end
- #        plot!(plt_reps, (Xx[axis_index_neg[cidx,1]],Yy[axis_index_neg[cidx,2]]),
-	# 		seriestype = :scatter; 
-	# 		markersize=5,
-	# 		#markercolor=:yellow, 
-	# 		markercolor=:white, 
-	# 		palette=:Set1_9)
-	# end
-	##################################################
-		# make sure index is integer and not a float 
-	# N x 2 matrix initialized with zeros, where N is length of identified persis. points
-		# for each interval in H0 persistence, with interval identifier cidx
-		# scans over each persistence interval 
-        # v_min = -minimum(vort) - not needed 
-		# assuring this isnt the last value found through loop 
-		# index of minimum element can be taken directly 
-		
-		# assigns a minimum vorticity value from the vorticity data matrix. in this case, v_min is the maximum vorticity reached once flipped
-   
-		# (interval.representative) -- gets the representative vertex attached to interval. 
-		# the most persistent point is the last point, i.e. PH_neg[1][end]
-		# make sure that this is the same indexing for H1 
-       # for (nelement,inum) in zip(pindex, 1:length(pindex))
-
-		
-		# for nelement in pindex
-		# 	# for each element of the matrix containing vertices for the H0 representatives, scan through each element
-  #           nelement = nelement[1]
-		# 	# taking the first element inside of the array, creating a scalar out of a vector of one element 
-			 
-		# 	# ^ creates two element vector of vertex, takes first element 
-		# 	# assign a temporary matrix equal vertex index matrix, then assign temp to the vertex of the least persistent point
-  #           cn = neg_v[nelement]
-		# 	# assigns cn to neg_v value @ vertex 
-  #           if cn<v_min
-		# 		# trying to find smallest value in neg_v and take index 
-  #               v_min=cn
-		# 		# then current value is cn 
-		# 		# store index of value @ axis_index_neg 
-  #           else
-		# 		# otherwise 
-  #           end
-        #end
-	
-end;
 
 # ╔═╡ 75784082-b66e-472c-95a2-ae18249d4d2d
 begin
@@ -689,6 +549,42 @@ end;
     #	end
 #	end
 #end;
+
+# ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
+@show(PH_neg[1])
+
+# ╔═╡ 909d5412-7748-4c7c-bbd5-24968620d008
+PH_neg_diag = plot(PH_neg,
+		xlims=(-50,50), 
+		ylims=(-50,50))
+
+# ╔═╡ 7f93214f-5a6f-4802-8720-e2e8d0d61674
+PH_pos_diag = plot(PH_pos,
+		xlims=(-50,50), 
+		ylims=(-50,50))
+
+# ╔═╡ b6ecc458-cd12-408f-aa0c-efccde6ad10f
+@show(PH_pos[1])
+
+# ╔═╡ 0763190c-24c8-4127-95f3-574de51ac6f8
+@show(PH_neg[1])
+
+# ╔═╡ b81b2591-f530-40c1-baff-d1e1a2082db2
+@show(PH_neg[1])
+
+# ╔═╡ 7ba5ef10-a135-48de-82fb-e1e3bcc6464e
+@show(PH_pos[1])
+
+# ╔═╡ 77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
+begin
+	plt_flip = plot(PH_pos[1];
+			xlims=(-50,50), 
+			ylims=(-50,50), markercolor=:red)
+	plot!(plt_flip,neg_interval; xlims=(-50,50), 
+			ylims=(-50,50), markercolor=:blue)
+	@show(plt_flip)
+	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
+end
 
 # ╔═╡ 47d44aca-3fa5-486f-981f-73c402909c4e
 PH1_neg, PH1_pos = process_snapshot(1, panel, cut)
@@ -2466,9 +2362,7 @@ version = "1.4.1+0"
 # ╠═43e81d74-37d8-4574-b06e-a57be04fe6be
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
-# ╠═e3d69201-3c69-4835-bc81-9c46ed86d8cf
-# ╠═a352efd1-b8ce-4dd4-826e-b08790ee7581
-# ╠═44642851-9f6e-42fd-981a-171043dbf10f
+# ╟─f4f66a74-5a05-498a-b3db-b7973241429f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
 # ╠═fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
@@ -2476,21 +2370,20 @@ version = "1.4.1+0"
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
 # ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
+# ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
+# ╟─7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
-# ╠═40de9c62-98c7-45fa-a332-7a9b374c7cfe
+# ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
 # ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
-# ╠═688f7320-b1ff-44f6-90ac-17665ea52bce
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
-# ╠═f777ae38-3aa2-4ec0-a6c5-1840b4133a20
 # ╠═d08db7ab-f9aa-4052-b67a-63c336a74b0d
 # ╟─630acaf0-4b21-4ed7-893f-7eaf6ade2403
+# ╟─a975d268-2f5e-4d50-8cae-49eb0d4654d5
 # ╠═8da5c1a0-ace0-4a67-944a-fa5b2922cbce
 # ╠═bd169286-1dee-493a-8854-5e165f13027e
-# ╠═fbcf171a-fd41-47b8-b08a-23c937b26647
 # ╠═d9659877-8585-4ee4-923a-dc0dd990beb2
 # ╠═f542d8cb-7ce1-4156-b57b-4be802381e56
-# ╠═917d2df6-e9ff-4f91-96af-ce6e32c68624
-# ╠═1754b2dd-0ef8-4d68-8e30-1d8847c62299
 # ╠═75784082-b66e-472c-95a2-ae18249d4d2d
 # ╠═5e9d76b0-f5d6-491e-8c3e-690aea50bd9b
 # ╠═9fc515d6-c672-4482-83ad-d4bd2f1d7ab3
@@ -2518,8 +2411,6 @@ version = "1.4.1+0"
 # ╠═c2b59ddc-1978-4ef7-a51a-f873e4327b73
 # ╠═77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
-# ╠═6080a86a-9149-4174-927a-cc227b97f7a7
-# ╠═205fe892-a6cf-4528-96d1-18bfdeda801a
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
 # ╠═47d44aca-3fa5-486f-981f-73c402909c4e
