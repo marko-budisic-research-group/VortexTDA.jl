@@ -27,6 +27,9 @@ begin
 	using JLD2
 end
 
+# ╔═╡ 91026068-6f5a-4870-bf0a-1887dcb55100
+using LazyGrids
+
 # ╔═╡ fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 using PlutoUI
 
@@ -127,6 +130,12 @@ md"""
 
 """
 
+# ╔═╡ 6d522955-f2db-4793-a56c-19ea4d0b207f
+
+
+# ╔═╡ ff01dc3d-9541-408a-8129-0df7117748d1
+
+
 # ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
 """
 Plot vorticity field as a red/blue heatmap.
@@ -187,15 +196,17 @@ const H0representativePoint = Tuple{CartesianIndex{2}, Number}
 
 # ╔═╡ bd169286-1dee-493a-8854-5e165f13027e
 """
-function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which )
+function getH0representativePoint( PI::PersistenceDiagrams.PersistenceInterval, which )
 
 Return a vector of pairs (CartesianIndices, Float)
 for a representative gridpoint corresponding to the PersistenceInterval.
 
 If which = :max, return gridpoint with max birth time.
 If which = :min, return gridpoint with min birth time.
+
+At its output, it creates H0representativePoint vector.
 """
-function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which=:min)
+function getH0representativePoint( PI::PersistenceDiagrams.PersistenceInterval, which=:min)
 
 	reprRaw = PI.representative;
 	reprVertexIdx = vertices.(reprRaw) # vector of single-element tuples
@@ -219,19 +230,16 @@ end
 
 # ╔═╡ d9659877-8585-4ee4-923a-dc0dd990beb2
 """
-For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in Xgrid, Ygrid
+For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
 """
-function plotH0pointRepresentatives!( 
+function plotH0representativePoint!( 
 	reps::Vector{T}, 
-	plothandle, Xgrid, Ygrid; kwargs... ) where T <: H0representativePoint
+	plothandle, XY; kwargs... ) where T <: H0representativePoint
 
 
 	coordinates = getindex.(reps,1)
-	idxRow = getindex.(coordinates,1)
-	idxCol = getindex.(coordinates,2)
-
 	
-	plot!(plothandle, Xgrid[idxCol], Ygrid[idxRow], 
+	plot!(plothandle, XY[2][coordinates], XY[1][coordinates], 
 			seriestype = :scatter; 
 			markersize=5,
 			palette=:Set1_9, kwargs...)
@@ -244,14 +252,77 @@ end
 Version of the function when only a single interval was passed.
 Simply creates a vector and passes to vector-based function.
 """
-function plotH0pointRepresentatives!( 
+function plotH0representativePoint!( 
 	rep :: T,  args...; kwargs... ) where T <: H0representativePoint
 
 
 	println("Inside singleton")
-	plotH0pointRepresentatives( [rep,], args...; kwargs...)
+	plotH0representativePoint!( [rep,], args...; kwargs...)
 
 end 
+
+# ╔═╡ 9d5a6b96-26a1-4343-8377-6a2e60a4828f
+md"""
+### $H_1$ representatives
+"""
+
+# ╔═╡ bb060f19-1dd1-4f31-aef0-c87e3c45492b
+"""
+Define alias for representative H1 vector.
+"""
+const H1representativeVector = Tuple{
+	Vector{Tuple{CartesianIndex{2}, CartesianIndex{2}}}, # array of pairs of (x,y) points
+	Vector{T} } where T <: Number # birth value for the representative
+
+# ╔═╡ 4db10dc3-2212-4e2c-bc18-cbd19ddb2c62
+# ╠═╡ disabled = true
+#=╠═╡
+using LazyGrids
+  ╠═╡ =#
+
+# ╔═╡ 736fdac7-87a4-4268-b8ff-34a57a45c1ce
+"""
+function getH1vectorRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which )
+
+Return a vector of pairs (Vector{CartesianIndex{2}}, Float)
+for a representative gridpoint corresponding to the PersistenceInterval.
+
+If which = :max, return gridpoint with max birth time.
+If which = :min, return gridpoint with min birth time.
+
+At its output, it creates H0representativePoint vector.
+"""
+function getH1representativeVector( PI::PersistenceDiagrams.PersistenceInterval )
+
+	reprRaw = PI.representative;
+	reprVertexIdx = vertices.(reprRaw) # vector of single-element tuples
+	#reprVertexIdx is a Vector of CartesianIndices pairs 
+	birthValue = birth.(reprRaw)
+	# values of the field that vertices take
+
+
+	return reprVertexIdx, birthValue
+
+end
+
+# ╔═╡ 8d2cc270-00c0-4d0f-bcde-3e2b477a749b
+"""
+For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
+"""
+function plotH1vectorRepresentatives!( 
+	rep, 
+	plothandle, XY; kwargs... ) 
+
+	@show coordinates = getindex.(rep[1],1)
+	
+	plot!(plothandle, 
+		XY[2][Iterators.flatten(coordinates)], 
+		XY[1][Iterators.flatten(coordinates)], 
+			color=:black,
+			palette=:Set1_9, kwargs...)
+
+
+end
 
 # ╔═╡ 9fc515d6-c672-4482-83ad-d4bd2f1d7ab3
 
@@ -381,6 +452,7 @@ end
 begin
 	X,Y,vorticity = retrieve_snapshot(j, panel)
 	Xx, Yy = pad_grid(X,Y)
+	XY = ndgrid(Yy, Xx)
 	vort = pad_by_value(vorticity, Inf, 1)	
 	PH_neg, PH_pos = PH_of_snapshot(vort, cut);
 end;
@@ -388,11 +460,32 @@ end;
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
 	plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)");	
-	neg_reps = getH0pointRepresentative.(PH_neg[1])
-	pos_reps = getH0pointRepresentative.(PH_pos[1])
+	neg_reps0 = getH0representativePoint.(PH_neg[1])
+	pos_reps0 = getH0representativePoint.(PH_pos[1])
 
-	plotH0pointRepresentatives!(pos_reps, plot_handle, Xx, Yy,markercolor=:magenta)
-	plotH0pointRepresentatives!(neg_reps, plot_handle, Xx, Yy, markercolor=:green)
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
+
+	neg_reps1 = getH1representativeVector.(PH_neg[2])
+	pos_reps1 = getH1representativeVector.(PH_pos[2])
+
+	plot_handle
+end
+
+# ╔═╡ 910f30d5-c36f-4c81-88ab-a9cdb88e4260
+begin
+	@show PI = PH_neg[2][1]
+	rep0 = getH0representativePoint(PH_neg[1][1])
+	@show isa(rep0, H0representativePoint )
+	rep1 = getH1representativeVector(PH_neg[2][1])
+	@show isa(rep1, H1representativeVector )
+end
+
+# ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
+begin
+	
+	plotH1vectorRepresentatives!(pos_reps1[1], plot_handle, XY,color=:magenta)
+
 	plot_handle
 end
 
@@ -681,6 +774,7 @@ Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+LazyGrids = "7031d0ef-c40d-4431-b2f8-61a8d2f650db"
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 PersistenceDiagrams = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
@@ -693,6 +787,7 @@ Distances = "~0.10.7"
 Images = "~0.25.2"
 JLD2 = "~0.4.25"
 LaTeXStrings = "~1.3.0"
+LazyGrids = "~0.4.0"
 MAT = "~0.10.3"
 PersistenceDiagrams = "~0.9.7"
 Plots = "~1.35.3"
@@ -707,7 +802,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "36d45293256f149ec340d7ddf8de3e7f50d99cde"
+project_hash = "6cc607f6de8d0c3cb276c1059bdfbb4ee8e6a94b"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -1392,6 +1487,12 @@ version = "0.15.17"
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+
+[[deps.LazyGrids]]
+deps = ["Statistics"]
+git-tree-sha1 = "6067a4741e854999dab2b116094ab8391f480a3b"
+uuid = "7031d0ef-c40d-4431-b2f8-61a8d2f650db"
+version = "0.4.0"
 
 [[deps.LazyModules]]
 git-tree-sha1 = "a560dd966b386ac9ae60bdd3a3d3a326062d3c3e"
@@ -2361,6 +2462,7 @@ version = "1.4.1+0"
 # ╔═╡ Cell order:
 # ╠═43e81d74-37d8-4574-b06e-a57be04fe6be
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
+# ╠═91026068-6f5a-4870-bf0a-1887dcb55100
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 # ╟─f4f66a74-5a05-498a-b3db-b7973241429f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
@@ -2375,6 +2477,8 @@ version = "1.4.1+0"
 # ╟─7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
 # ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
+# ╠═6d522955-f2db-4793-a56c-19ea4d0b207f
+# ╠═ff01dc3d-9541-408a-8129-0df7117748d1
 # ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
 # ╠═d08db7ab-f9aa-4052-b67a-63c336a74b0d
@@ -2384,6 +2488,13 @@ version = "1.4.1+0"
 # ╠═bd169286-1dee-493a-8854-5e165f13027e
 # ╠═d9659877-8585-4ee4-923a-dc0dd990beb2
 # ╠═f542d8cb-7ce1-4156-b57b-4be802381e56
+# ╟─9d5a6b96-26a1-4343-8377-6a2e60a4828f
+# ╠═bb060f19-1dd1-4f31-aef0-c87e3c45492b
+# ╠═910f30d5-c36f-4c81-88ab-a9cdb88e4260
+# ╠═4db10dc3-2212-4e2c-bc18-cbd19ddb2c62
+# ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
+# ╠═53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
+# ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 # ╠═75784082-b66e-472c-95a2-ae18249d4d2d
 # ╠═5e9d76b0-f5d6-491e-8c3e-690aea50bd9b
 # ╠═9fc515d6-c672-4482-83ad-d4bd2f1d7ab3
