@@ -134,7 +134,53 @@ md"""
 # ╔═╡ 630acaf0-4b21-4ed7-893f-7eaf6ade2403
 md"""
 ## Extract the representatives
+
+A persistence diagram PD at a particular order $H_n$ is an array of `PersistenceDiagrams.PersistenceInterval`-typed objects.
+
+Each `PersistenceInterval` has properties:
+`(:birth, :death, :birth_simplex, :death_simplex, :representative)`
+
+Given a `PersistenceInterval`, `PI`, the representative `PI.representative` is a vector of Ripserer.Cubes or a Ripserer.Chain.
+
+Calling `vertices()` on each element of PI.representative (syntax `.()` applies a function elementwise) returns a tuple of CartesianIndex (H0) or CartesianIndex pairs (H1) that index into the original field analyzed by PD.
+
 """
+
+
+# ╔═╡ bd169286-1dee-493a-8854-5e165f13027e
+"""
+function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which )
+
+Return a vector of pairs (CartesianIndices, Float)
+for a representative gridpoint corresponding to the PersistenceInterval.
+
+If which = :max, return gridpoint with max birth time.
+If which = :min, return gridpoint with min birth time.
+"""
+function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which )
+
+	reprRaw = PI.representative;
+	reprVertexIdx = vertices.(reprRaw) # vector of single-element tuples
+	reprVertexIdx = getindex.(reprVertexIdx,1) # extract the (only) element from each tuple
+	#reprVertexIdx is a Vector of CartesianIndices pairs 
+	birthValue = birth.(reprRaw)
+	# values of the field that vertices take
+
+	# selection of the gridpoint as either grid point with largest or smallest field value
+	if which == :max
+		sel_value, sel_idx = findmax(birthValue)
+	elseif which == :min
+		sel_value, sel_idx = findmin(birthValue)
+	else
+		error("Unknown selection method for the vertex")
+	end
+
+	return reprVertexIdx[sel_idx], sel_value
+
+end
+
+# ╔═╡ d9659877-8585-4ee4-923a-dc0dd990beb2
+
 
 # ╔═╡ 1754b2dd-0ef8-4d68-8e30-1d8847c62299
 
@@ -302,6 +348,22 @@ plt_reps = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)")
 # ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
 PH_neg, PH_pos = process_snapshot(vort)
 
+# ╔═╡ d08db7ab-f9aa-4052-b67a-63c336a74b0d
+begin
+	@show propertynames(PH_neg[1][1])
+	R = PH_neg[1][end-2].representative
+	@show typeof(R)
+	vtx = vertices.(R)
+	@show typeof(vtx[1])
+	@show getindex.(vtx,1)
+
+	@show birth.(R)
+	findmax(birth.(R))
+
+	vtxReps = getH0pointRepresentative.(PH_neg[1], :min)
+end
+
+
 # ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
 @show(PH_neg[1])
 
@@ -339,10 +401,10 @@ begin
 end
 
 # ╔═╡ 917d2df6-e9ff-4f91-96af-ce6e32c68624
-begin
-	axis_index_neg = zeros(Int,(length(PH_neg[1]),2))
+function plotH0reps( plothandle, PH )
+	axis_index_neg = zeros(Int,(length(PH[1]),2))
 	
-	for (cidx, interval) in enumerate(PH_neg[1])
+	for (cidx, interval) in enumerate(PH[1])
 		     pindex = vertices.(interval.representative)
 				v_min, min_index = findmin(neg_v) 
 
@@ -2370,7 +2432,10 @@ version = "1.4.1+0"
 # ╠═688f7320-b1ff-44f6-90ac-17665ea52bce
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
 # ╠═f777ae38-3aa2-4ec0-a6c5-1840b4133a20
+# ╠═d08db7ab-f9aa-4052-b67a-63c336a74b0d
 # ╟─630acaf0-4b21-4ed7-893f-7eaf6ade2403
+# ╠═bd169286-1dee-493a-8854-5e165f13027e
+# ╠═d9659877-8585-4ee4-923a-dc0dd990beb2
 # ╠═917d2df6-e9ff-4f91-96af-ce6e32c68624
 # ╠═1754b2dd-0ef8-4d68-8e30-1d8847c62299
 # ╠═75784082-b66e-472c-95a2-ae18249d4d2d
