@@ -124,12 +124,6 @@ function snapshotselector(sel)
 	end
 end
 
-# ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
-md"""
-  - Snapshot number $(snapshotselector(autoplay))
-
-"""
-
 # ╔═╡ 6d522955-f2db-4793-a56c-19ea4d0b207f
 
 
@@ -305,22 +299,49 @@ function getH1representativeVector( PI::PersistenceDiagrams.PersistenceInterval 
 
 end
 
+# ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
+md"""
+  - Snapshot number $(snapshotselector(autoplay))
+
+"""
+
+# ╔═╡ 17e025b4-d03f-40c4-8096-f7dccf5926ef
+
+
+# ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
+"""
+Visualize
+
+"""
+begin
+	neg_reps1 = getH1representativeVector.(PH_neg[2])
+	pos_reps1 = getH1representativeVector.(PH_pos[2])
+
+
+	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+	
+	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	plot_handle
+end
+
 # ╔═╡ 8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 """
 For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
 """
-function plotH1vectorRepresentatives!( 
-	rep, 
+function plotH1representativeVector!( 
+	rep :: H1representativeVector, 
 	plothandle, XY; kwargs... ) 
 
-	@show coordinates = getindex.(rep[1],1)
-	
+	[
 	plot!(plothandle, 
-		XY[2][Iterators.flatten(coordinates)], 
-		XY[1][Iterators.flatten(coordinates)], 
-			color=:black,
-			palette=:Set1_9, kwargs...)
+		[XY[2][p] for p in edge],
+		[XY[1][p] for p in edge],
+		markersize=1, markercolor=:black,
+		palette=:Set1_9; kwargs...)		
+		for edge in rep[1]
+	]
 
+	return plothandle
 
 end
 
@@ -465,26 +486,6 @@ begin
 
 	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
 	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
-
-	neg_reps1 = getH1representativeVector.(PH_neg[2])
-	pos_reps1 = getH1representativeVector.(PH_pos[2])
-
-	plot_handle
-end
-
-# ╔═╡ 910f30d5-c36f-4c81-88ab-a9cdb88e4260
-begin
-	@show PI = PH_neg[2][1]
-	rep0 = getH0representativePoint(PH_neg[1][1])
-	@show isa(rep0, H0representativePoint )
-	rep1 = getH1representativeVector(PH_neg[2][1])
-	@show isa(rep1, H1representativeVector )
-end
-
-# ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
-begin
-	
-	plotH1vectorRepresentatives!(pos_reps1[1], plot_handle, XY,color=:magenta)
 
 	plot_handle
 end
@@ -802,7 +803,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "6cc607f6de8d0c3cb276c1059bdfbb4ee8e6a94b"
+project_hash = "317938b5098ffb8d2768a5623891aa46eb95ad51"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -2473,7 +2474,6 @@ version = "1.4.1+0"
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
 # ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
 # ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
-# ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
 # ╟─7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
 # ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
@@ -2490,9 +2490,10 @@ version = "1.4.1+0"
 # ╠═f542d8cb-7ce1-4156-b57b-4be802381e56
 # ╟─9d5a6b96-26a1-4343-8377-6a2e60a4828f
 # ╠═bb060f19-1dd1-4f31-aef0-c87e3c45492b
-# ╠═910f30d5-c36f-4c81-88ab-a9cdb88e4260
 # ╠═4db10dc3-2212-4e2c-bc18-cbd19ddb2c62
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
+# ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
+# ╠═17e025b4-d03f-40c4-8096-f7dccf5926ef
 # ╠═53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 # ╠═75784082-b66e-472c-95a2-ae18249d4d2d
