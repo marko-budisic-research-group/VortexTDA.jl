@@ -110,9 +110,11 @@ md"""
 # ╔═╡ e3d69201-3c69-4835-bc81-9c46ed86d8cf
 md"""
 Tune the following values:
-  - Autoplay snapshots $(@bind autoplay CheckBox(default=true))
+  - Autoplay snapshots $(@bind autoplay CheckBox(default=false))
   - Topological noise cutoff $(@bind cut Slider(0:0.01:10, show_value = true, default=0.5))
   - Plate motion $(@bind caselabel Select([:Heaving,:Pitching,:HeavingAndPitching]))
+  - Show H0? $(@bind showH0 CheckBox(default=true))
+  - Show H1? $(@bind showH1 CheckBox(default=true))
 
 - Saving? $(@bind issaving CheckBox(default=false))
 - Extension: $(@bind ext Select(["png","pdf"]))
@@ -142,9 +144,6 @@ begin
 	@show sav_path
 end;
 
-# ╔═╡ 4224e4f8-6613-42b5-8ad5-23278f4caa21
-
-
 # ╔═╡ 7b157ef8-eb23-44b8-aed8-3c3673ab072e
 function snapshotselector(sel,N=nsnapshots)
 	if sel
@@ -160,12 +159,6 @@ md"""
 
 $(snapshotselector(autoplay))
 """
-
-# ╔═╡ 6d522955-f2db-4793-a56c-19ea4d0b207f
-
-
-# ╔═╡ ff01dc3d-9541-408a-8129-0df7117748d1
-
 
 # ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
 """
@@ -212,6 +205,9 @@ Given a `PersistenceInterval`, `PI`, the representative `PI.representative` is a
 Calling `vertices()` on each element of PI.representative (syntax `.()` applies a function elementwise) returns a tuple of CartesianIndex (H0) or CartesianIndex pairs (H1) that index into the original field analyzed by PD.
 
 """
+
+
+# ╔═╡ 60e39f80-ac6e-4dfe-8a99-e549f58b414c
 
 
 # ╔═╡ a975d268-2f5e-4d50-8cae-49eb0d4654d5
@@ -493,7 +489,18 @@ end;
 
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
-	plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)/$(nsnapshots)");	
+	plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)/$(nsnapshots)");
+end;
+
+# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
+if issaving 
+	@show snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
+	savefig( plot_handle,joinpath(local_path,snapshotfile))
+end
+
+# ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
+if showH0
+	println("Snapshot $j H0 visualized")
 	neg_reps0 = getH0representativePoint.(PH_neg[1])
 	pos_reps0 = getH0representativePoint.(PH_pos[1])
 
@@ -503,22 +510,22 @@ begin
 	plot_handle
 end
 
-# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
-if issaving 
-	@show snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
-	savefig( plot_handle,joinpath(local_path,snapshotfile))
-end
-
 # ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # modifies plot_handle to visualize representatives of positive and negative H1
-begin
+if showH1
 	neg_reps1 = getH1representativeVector.(PH_neg[2])
 	pos_reps1 = getH1representativeVector.(PH_pos[2])
-
 
 	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
 	
 	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	plot_handle
+end
+
+# ╔═╡ 4224e4f8-6613-42b5-8ad5-23278f4caa21
+begin
+	if showH0; neg_reps0; end # this is here simply to redisplay the image after checkbox changes
+	if showH1; neg_reps1; end # this is here simply to redisplay the image after checkbox changes
 	plot_handle
 end
 
@@ -2354,19 +2361,19 @@ version = "1.4.1+0"
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
 # ╠═21eb85dc-e4d8-4fde-b363-2e604d419cd2
 # ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
-# ╠═e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
 # ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
 # ╠═4224e4f8-6613-42b5-8ad5-23278f4caa21
 # ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
-# ╟─b7985340-2a1c-4fae-9628-123f74d6fe9e
-# ╠═6d522955-f2db-4793-a56c-19ea4d0b207f
-# ╠═ff01dc3d-9541-408a-8129-0df7117748d1
+# ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
 # ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
 # ╠═d08db7ab-f9aa-4052-b67a-63c336a74b0d
 # ╟─630acaf0-4b21-4ed7-893f-7eaf6ade2403
+# ╠═60e39f80-ac6e-4dfe-8a99-e549f58b414c
 # ╟─a975d268-2f5e-4d50-8cae-49eb0d4654d5
+# ╠═c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
 # ╠═8da5c1a0-ace0-4a67-944a-fa5b2922cbce
 # ╠═bd169286-1dee-493a-8854-5e165f13027e
 # ╠═d9659877-8585-4ee4-923a-dc0dd990beb2
