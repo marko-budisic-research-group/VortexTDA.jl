@@ -27,6 +27,9 @@ begin
 	using JLD2
 end
 
+# ╔═╡ 12cd9077-bc2d-4eb8-a673-c4f2374a3633
+using Printf
+
 # ╔═╡ 91026068-6f5a-4870-bf0a-1887dcb55100
 using LazyGrids
 
@@ -75,7 +78,8 @@ function alemnis_path(panelcase)
 	
 	vort_path = joinpath( toplevel,"mat_file" , panelcase)
 	sav_path = joinpath( toplevel, "old_results", panelcase )
-	vort_path, sav_path
+	local_sav_path = "" # for temporary data
+	return vort_path, sav_path,local_sav_path
 end;
 
 # ╔═╡ 4abde889-f80d-431c-9a78-4a53d70f4727
@@ -84,7 +88,8 @@ function markos_path(panelcase)
 	
 	vort_path = joinpath(toplevel,"data",panelcase)
 	sav_path = joinpath(toplevel,"results",panelcase)
-	return vort_path, sav_path
+	local_sav_path = "/Users/marko/Downloads" # for temporary data
+	return vort_path, sav_path, local_sav_path
 end;
 
 # ╔═╡ 21eb85dc-e4d8-4fde-b363-2e604d419cd2
@@ -93,7 +98,8 @@ function melissas_path(panelcase)
 	
 	vort_path = joinpath(toplevel,"data",panelcase)
 	sav_path = joinpath(toplevel,"results",panelcase)
-	return vort_path, sav_path
+	local_sav_path = "" # for temporary data	
+	return vort_path, sav_path, local_sav_path
 end;
 
 # ╔═╡ 56bd1c69-2d1e-4cd6-9603-7d986512f215
@@ -108,19 +114,21 @@ Tune the following values:
   - Topological noise cutoff $(@bind cut Slider(0:0.01:10, show_value = true, default=0.5))
   - Plate motion $(@bind caselabel Select([:Heaving,:Pitching,:HeavingAndPitching]))
 
+- Saving? $(@bind issaving CheckBox(default=false))
+- Extension: $(@bind ext Select(["png","pdf"]))
 """
 
 # ╔═╡ c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 begin
 	panelcase = "P$(panel)C$(CaseToFile[caselabel])"
-	vort_path, sav_path = alemnis_path(panelcase)
+	vort_path, sav_path, local_path = alemnis_path(panelcase)
 
 	if !( isdir(vort_path) && isdir(sav_path) )
-		vort_path, sav_path = markos_path(panelcase)
+		vort_path, sav_path, local_path = markos_path(panelcase)
 	end
 
 	if !( isdir(vort_path) && isdir(sav_path) )
-		vort_path, sav_path = melissas_path(panelcase)
+		vort_path, sav_path, local_path = melissas_path(panelcase)
 	end
 	
 
@@ -148,7 +156,9 @@ end
 
 # ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
 md"""
-## Snapshot selection: $(snapshotselector(autoplay))
+## Snapshot selection: 
+
+$(snapshotselector(autoplay))
 """
 
 # ╔═╡ 6d522955-f2db-4793-a56c-19ea4d0b207f
@@ -356,18 +366,10 @@ function plotH1representativeVector!(
 
 end
 
-# ╔═╡ 9fc515d6-c672-4482-83ad-d4bd2f1d7ab3
-
-
-# ╔═╡ 0e08d81a-e6c8-47d1-9d07-9c7fc2e89223
-
-
-# ╔═╡ 638de35e-0af5-4cbb-a16d-33efd1d9fe92
-# begin
-# for interval in PH_pos[1]
-# 	plot!(plt_reps,interval, pos_v; markercolor=:white, threshold=birth(interval))
-# end
-# end;
+# ╔═╡ 5d5090ae-8083-40d1-8ac0-38a2f9555733
+md"""
+# Saving files
+"""
 
 # ╔═╡ 2959ae4e-4d32-483e-b7c4-f76db2b33f1a
  #cut=5;
@@ -501,6 +503,12 @@ begin
 	plot_handle
 end
 
+# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
+if issaving 
+	@show snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
+	savefig( plot_handle,joinpath(local_path,snapshotfile))
+end
+
 # ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # modifies plot_handle to visualize representatives of positive and negative H1
 begin
@@ -513,160 +521,6 @@ begin
 	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
 	plot_handle
 end
-
-# ╔═╡ 75784082-b66e-472c-95a2-ae18249d4d2d
-begin
-	#This block identifies the H1 chains and scales/plots them on the actual heatmap
-	for (cidx, interval) in enumerate(PH_neg[2])
-		# for each interval in H0 persistence, with interval identifier cidx
-		# scans over each persistence interval
-        pindex = vertices.(interval.representative)
-		# (interval.representative) -- gets the representative cycle attached to interval in PH. 
-
-		# the most persistent cycle is the last cycle, i.e. PH_neg[2][end]
-
-		# vertices.(interval.representative) -- returns the edges (1-cube) of the chain that makes up the cycle
-        for nelement in pindex
-		# for each edge element in the edge array
-            plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],nelement[2][1]]]; 
-			linewidth=2, 
-			# add to the plot a line that draws the representative to scale with the nondimensionalized Xx and Yy
-			#color=:orange, blue
-			color=:black,
-			palette=:Set1_9)
-        end
-	end
-	#############################################################
-	# for (interval, cidx) in zip(PH_neg[2],1:length(PH_neg[2]))
- #        pindex = vertices.(interval.representative)
- #        for nelement in pindex
- #            plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],nelement[2][1]]]; 
-	# 		linewidth=2, 
-	# 		#color=:orange,
-	# 		color=:black,
-	# 		palette=:Set1_9)
- #        end
-	# end
- end;
-
-# ╔═╡ 5e9d76b0-f5d6-491e-8c3e-690aea50bd9b
-begin
-	axis_index_pos = zeros(Int,(length(PH_pos[1]),2))
-		# N x 2 matrix initialized with zeros, where N is length of identified persis. points
-	for (cidx, interval) in enumerate(PH_pos[1])
-		pindex = vertices.(interval.representative)
-		# @show(size(pos_v))
-		
-		#pindex = [temp1[1] for temp1 in pindex]
-		#pindex = getindex.(pindex,1)
-		pindex = first.(pindex)
-		# gets first index of every element in pindex
-		#pos_v[pindex[:,1]]
-		#@show(length(pindex))		
-		#@show(pos_v[pindex])
-		v_min, temp_index = findmin(pos_v[pindex])
-		# @show(cidx)
-		 min_index = pindex[temp_index]
-		 axis_index_pos[cidx,1] = min_index[2]
-		 axis_index_pos[cidx,2] = min_index[1]
-		#cn = pos_v[nelement]
-		#if cn < v_min
-		#	v_min = cn
-			plot!(plt_reps,(Xx[axis_index_pos[cidx,1]], Yy[axis_index_pos[cidx,2]]), seriestype = :scatter; markersize = 5, markercolor=:white, palette=:Set1_9)
-		# #end red
-		# @show((Xx[axis_index_pos[cidx,1]], Yy[axis_index_pos[cidx,2]]))
-		# @show(axis_index_pos[cidx,1],axis_index_pos[cidx,2])
-	end
-end;
-##################################################
-# begin
-# axis_index_pos = zeros(Int,(length(PH_pos[1]),2))
-# 	for (interval, cidx) in zip(PH_pos[1],1:length(PH_pos[1]))
-#         v_min = maximum(vort)
-#         pindex = vertices.(interval.representative)
-#         for (nelement,inum) in zip(pindex, 1:length(pindex))
-#             temp = collect(nelement)[1]
-#             cn = pos_v[temp[1],temp[2]]
-#             if cn<v_min
-#                 v_min=cn
-#                 axis_index_pos[cidx,1] = temp[2]
-#             	axis_index_pos[cidx,2] = temp[1]
-#             else
-#             end
-# 		end
-# 		plot!(plt_reps, (Xx[axis_index_pos[cidx,1]],Yy[axis_index_pos[cidx,2]]),
-# 			seriestype = :scatter; 
-# 			markersize=5,
-# 			markercolor=:white, 
-# 			palette=:Set1_9)
-# 	end
-# end;
-##################################################
-	
-	#for (interval, cidx) in zip(PH_pos[1],1:length(PH_pos[1]))
-     #   v_min = maximum(vort)
-      #  pindex = vertices.(interval.representative)
-       # for (nelement,inum) in zip(pindex, 1:length(pindex))
-        #    temp = collect(nelement)[1]
-         #   cn = pos_v[temp[1],temp[2]]
-          #  if cn<v_min
-           #     v_min=cn
-            #    axis_index_pos[cidx,1] = temp[2]
-            #	axis_index_pos[cidx,2] = temp[1]
-           # else
-           # end
-	#	end
-	#	plot!(plt_reps, (Xx[axis_index_pos[cidx,1]],Yy[axis_index_pos[cidx,2]]),
-	#		seriestype = :scatter; 
-	#		markersize=5,
-	#		markercolor=:blue, 
-	#		palette=:Set1_9)
-#	end
-# end;
-
-# ╔═╡ c72aea54-b31b-4a16-9c24-abaeb6becac6
-begin
-	for(cidx,interval) in enumerate(PH_pos[2])
-		pindex = vertices.(interval.representative)
-		@show cidx
-		for nelement in pindex
-			xval = Xx[[nelement[1][2],nelement[2][2]]]
-			yval = Yy[[nelement[1][1],nelement[2][1]]]
-			@show xval,yval
-			plot!(plt_reps, xval, yval;
-				linewidth=10,color=:green,palette=:Set1_9)
-		end
-	end
-end;
-# #########################################################
-# begin
-# for (interval, cidx) in zip(PH_pos[2],1:length(PH_pos[2]))
-# 		pindex = vertices.(interval.representative)
-#     	for nelement in pindex
-#         	plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],
-# 			nelement[2][1]]]; 
-# 			linewidth=2, 
-# 			#color=:gray,
-# 			color=:black,
-# 			palette=:Set1_9)
-#     	end
-# 	end
-# end;
-#########################################################
-
-#begin
-#	for (interval, cidx) in zip(PH_pos[2],1:length(PH_pos[2]))
-#		pindex = vertices.(interval.representative)
- #   	for nelement in pindex
-  #      	plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],
-	#		nelement[2][1]]]; 
-	#		linewidth=2, 
-			#color=:gray,
-	#		color=:red,
-	#		palette=:Set1_9)
-    #	end
-#	end
-#end;
 
 # ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
 @show(PH_neg[1])
@@ -804,6 +658,7 @@ MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 PersistenceDiagrams = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Ripserer = "aa79e827-bd0b-42a8-9f10-2b302677a641"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 
@@ -827,7 +682,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "317938b5098ffb8d2768a5623891aa46eb95ad51"
+project_hash = "4b0337320ee178e0e4e20dad8e9207fbfe9bb18a"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -2487,6 +2342,7 @@ version = "1.4.1+0"
 # ╔═╡ Cell order:
 # ╠═43e81d74-37d8-4574-b06e-a57be04fe6be
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
+# ╠═12cd9077-bc2d-4eb8-a673-c4f2374a3633
 # ╠═91026068-6f5a-4870-bf0a-1887dcb55100
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 # ╟─f4f66a74-5a05-498a-b3db-b7973241429f
@@ -2498,7 +2354,7 @@ version = "1.4.1+0"
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
 # ╠═21eb85dc-e4d8-4fde-b363-2e604d419cd2
 # ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
-# ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╠═e3d69201-3c69-4835-bc81-9c46ed86d8cf
 # ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
 # ╠═4224e4f8-6613-42b5-8ad5-23278f4caa21
 # ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
@@ -2517,17 +2373,13 @@ version = "1.4.1+0"
 # ╠═f542d8cb-7ce1-4156-b57b-4be802381e56
 # ╟─9d5a6b96-26a1-4343-8377-6a2e60a4828f
 # ╠═bb060f19-1dd1-4f31-aef0-c87e3c45492b
+# ╠═53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # ╠═4db10dc3-2212-4e2c-bc18-cbd19ddb2c62
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
 # ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
-# ╠═53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
-# ╠═75784082-b66e-472c-95a2-ae18249d4d2d
-# ╠═5e9d76b0-f5d6-491e-8c3e-690aea50bd9b
-# ╠═9fc515d6-c672-4482-83ad-d4bd2f1d7ab3
-# ╠═0e08d81a-e6c8-47d1-9d07-9c7fc2e89223
-# ╠═c72aea54-b31b-4a16-9c24-abaeb6becac6
-# ╠═638de35e-0af5-4cbb-a16d-33efd1d9fe92
+# ╠═5d5090ae-8083-40d1-8ac0-38a2f9555733
+# ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
 # ╟─2959ae4e-4d32-483e-b7c4-f76db2b33f1a
 # ╠═b1967a32-d241-4c66-803b-5f19c8703141
 # ╠═53091b20-ce7a-4560-b33c-4bf0977a275c
