@@ -62,6 +62,8 @@ end;
 # ╔═╡ fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
 md"""
 ## Paths
+
+Edit `toplevel` variable to point to "will" folder in Google Drive shared space.
 """
 
 # ╔═╡ f6641248-3519-4c0f-b02b-a2e8343a9c6e
@@ -79,6 +81,15 @@ end;
 # ╔═╡ 4abde889-f80d-431c-9a78-4a53d70f4727
 function markos_path(panelcase)
 	toplevel = raw"/Volumes/GoogleDrive/.shortcut-targets-by-id/1U-9WSU_a1YjWMmjCKhqZLiC6Rha4kesp/GreenYiran/will"
+	
+	vort_path = joinpath(toplevel,"data",panelcase)
+	sav_path = joinpath(toplevel,"results",panelcase)
+	return vort_path, sav_path
+end;
+
+# ╔═╡ 21eb85dc-e4d8-4fde-b363-2e604d419cd2
+function melissas_path(panelcase)
+	toplevel = raw"EDITHERE/GreenYiran/will"
 	
 	vort_path = joinpath(toplevel,"data",panelcase)
 	sav_path = joinpath(toplevel,"results",panelcase)
@@ -109,20 +120,36 @@ begin
 	end
 
 	if !( isdir(vort_path) && isdir(sav_path) )
+		vort_path, sav_path = melissas_path(panelcase)
+	end
+	
+
+	if !( isdir(vort_path) && isdir(sav_path) )
 		error("Unsuccessful path change -- folders don't exist")
 	end
+
+	nsnapshots = length(readdir(vort_path))
+
 	@show vort_path
 	@show sav_path
 end;
 
+# ╔═╡ 4224e4f8-6613-42b5-8ad5-23278f4caa21
+
+
 # ╔═╡ 7b157ef8-eb23-44b8-aed8-3c3673ab072e
-function snapshotselector(sel)
+function snapshotselector(sel,N=nsnapshots)
 	if sel
-		@bind j Clock(interval=1,max_value = 25,start_running=true)
+		@bind j Clock(interval=1,max_value = N,start_running=true)
 	else
-		@bind j Slider(1:25, show_value=true)
+		@bind j Slider(1:N, show_value=true)
 	end
 end
+
+# ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
+md"""
+## Snapshot selection: $(snapshotselector(autoplay))
+"""
 
 # ╔═╡ 6d522955-f2db-4793-a56c-19ea4d0b207f
 
@@ -299,30 +326,14 @@ function getH1representativeVector( PI::PersistenceDiagrams.PersistenceInterval 
 
 end
 
-# ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
-md"""
-  - Snapshot number $(snapshotselector(autoplay))
-
-"""
-
 # ╔═╡ 17e025b4-d03f-40c4-8096-f7dccf5926ef
+md"""
+Visualize H1 representatives. 
+
+Remember `.(...)` syntax broadcasts (vectorizes) the function along the vector argument.
 
 
-# ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 """
-Visualize
-
-"""
-begin
-	neg_reps1 = getH1representativeVector.(PH_neg[2])
-	pos_reps1 = getH1representativeVector.(PH_pos[2])
-
-
-	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
-	
-	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
-	plot_handle
-end
 
 # ╔═╡ 8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 """
@@ -480,13 +491,26 @@ end;
 
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
-	plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)");	
+	plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)/$(nsnapshots)");	
 	neg_reps0 = getH0representativePoint.(PH_neg[1])
 	pos_reps0 = getH0representativePoint.(PH_pos[1])
 
 	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
 	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
 
+	plot_handle
+end
+
+# ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
+# modifies plot_handle to visualize representatives of positive and negative H1
+begin
+	neg_reps1 = getH1representativeVector.(PH_neg[2])
+	pos_reps1 = getH1representativeVector.(PH_pos[2])
+
+
+	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+	
+	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
 	plot_handle
 end
 
@@ -2472,11 +2496,14 @@ version = "1.4.1+0"
 # ╠═c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
+# ╠═21eb85dc-e4d8-4fde-b363-2e604d419cd2
 # ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
 # ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
-# ╟─7b157ef8-eb23-44b8-aed8-3c3673ab072e
+# ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
+# ╠═4224e4f8-6613-42b5-8ad5-23278f4caa21
+# ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
-# ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
+# ╟─b7985340-2a1c-4fae-9628-123f74d6fe9e
 # ╠═6d522955-f2db-4793-a56c-19ea4d0b207f
 # ╠═ff01dc3d-9541-408a-8129-0df7117748d1
 # ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
@@ -2492,8 +2519,7 @@ version = "1.4.1+0"
 # ╠═bb060f19-1dd1-4f31-aef0-c87e3c45492b
 # ╠═4db10dc3-2212-4e2c-bc18-cbd19ddb2c62
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
-# ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
-# ╠═17e025b4-d03f-40c4-8096-f7dccf5926ef
+# ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
 # ╠═53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 # ╠═75784082-b66e-472c-95a2-ae18249d4d2d
