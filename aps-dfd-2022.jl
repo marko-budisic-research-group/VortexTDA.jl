@@ -39,6 +39,10 @@ using PlutoUI
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
+# ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
+# set all fonts in the Plots.jl to LaTeX-style fonts
+Plots.default(fontfamily = "Computer Modern")
+
 # ╔═╡ f4f66a74-5a05-498a-b3db-b7973241429f
 md"""
 # Initial Setup
@@ -367,8 +371,10 @@ md"""
 # Saving files
 """
 
-# ╔═╡ 2959ae4e-4d32-483e-b7c4-f76db2b33f1a
- #cut=5;
+# ╔═╡ dceda673-041d-49be-82ae-740f329c0ec1
+md"""
+# Appendix (as-of-yet-untouched code)
+"""
 
 # ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
 @show(plt_reps)
@@ -2352,6 +2358,7 @@ version = "1.4.1+0"
 # ╠═12cd9077-bc2d-4eb8-a673-c4f2374a3633
 # ╠═91026068-6f5a-4870-bf0a-1887dcb55100
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
+# ╠═d17bfc41-9551-4b0b-b643-8a955fb492a0
 # ╟─f4f66a74-5a05-498a-b3db-b7973241429f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
@@ -2387,7 +2394,7 @@ version = "1.4.1+0"
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 # ╠═5d5090ae-8083-40d1-8ac0-38a2f9555733
 # ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
-# ╟─2959ae4e-4d32-483e-b7c4-f76db2b33f1a
+# ╟─dceda673-041d-49be-82ae-740f329c0ec1
 # ╠═b1967a32-d241-4c66-803b-5f19c8703141
 # ╠═53091b20-ce7a-4560-b33c-4bf0977a275c
 # ╠═a3d6464f-2349-49b6-8fc8-bcd623d8403b
