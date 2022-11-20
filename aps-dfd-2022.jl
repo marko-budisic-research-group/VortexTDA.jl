@@ -40,8 +40,14 @@ md"""
 
 Tune the following values:
   - Snapshot number $(@bind j Slider(1:25, show_value=true))
-  - Topological noise cutoff $(@bind cut Slider(0:0.1:10, show_value = true))
+  - Topological noise cutoff $(@bind cut Slider(0:0.1:100, show_value = true))
 """
+
+# ╔═╡ a352efd1-b8ce-4dd4-826e-b08790ee7581
+
+
+# ╔═╡ 44642851-9f6e-42fd-981a-171043dbf10f
+
 
 # ╔═╡ a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 md"""
@@ -147,6 +153,12 @@ Calling `vertices()` on each element of PI.representative (syntax `.()` applies 
 """
 
 
+# ╔═╡ 8da5c1a0-ace0-4a67-944a-fa5b2922cbce
+"""
+Define alias for the type describing the representative of H0
+"""
+const H0representativePoint = Tuple{CartesianIndex{2}, Number}
+
 # ╔═╡ bd169286-1dee-493a-8854-5e165f13027e
 """
 function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which )
@@ -157,7 +169,7 @@ for a representative gridpoint corresponding to the PersistenceInterval.
 If which = :max, return gridpoint with max birth time.
 If which = :min, return gridpoint with min birth time.
 """
-function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which )
+function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which=:min)
 
 	reprRaw = PI.representative;
 	reprVertexIdx = vertices.(reprRaw) # vector of single-element tuples
@@ -180,7 +192,40 @@ function getH0pointRepresentative( PI::PersistenceDiagrams.PersistenceInterval, 
 end
 
 # ╔═╡ d9659877-8585-4ee4-923a-dc0dd990beb2
+"""
+For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in Xgrid, Ygrid
+"""
+function plotH0pointRepresentatives!( 
+	reps::Vector{T}, 
+	plothandle, Xgrid, Ygrid; kwargs... ) where T <: H0representativePoint
 
+
+	coordinates = getindex.(reps,1)
+	idxRow = getindex.(coordinates,1)
+	idxCol = getindex.(coordinates,2)
+
+	
+	plot!(plothandle, Xgrid[idxCol], Ygrid[idxRow], 
+			seriestype = :scatter; 
+			markersize=5,
+			palette=:Set1_9, kwargs...)
+
+
+end
+
+# ╔═╡ f542d8cb-7ce1-4156-b57b-4be802381e56
+"""
+Version of the function when only a single interval was passed.
+Simply creates a vector and passes to vector-based function.
+"""
+function plotH0pointRepresentatives!( 
+	rep :: T,  args...; kwargs... ) where T <: H0representativePoint
+
+
+	println("Inside singleton")
+	plotH0pointRepresentatives( [rep,], args...; kwargs...)
+
+end 
 
 # ╔═╡ 1754b2dd-0ef8-4d68-8e30-1d8847c62299
 
@@ -200,6 +245,9 @@ end
 
 # ╔═╡ 2959ae4e-4d32-483e-b7c4-f76db2b33f1a
  #cut=5;
+
+# ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
+@show(plt_reps)
 
 # ╔═╡ a3d6464f-2349-49b6-8fc8-bcd623d8403b
 # savefig(plt_reps,"C:\\Users\\yiran\\Downloads\\"*"cutoff_rep_4.png")
@@ -340,27 +388,17 @@ begin
 end;
 
 # ╔═╡ 688f7320-b1ff-44f6-90ac-17665ea52bce
-plt_reps = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)")
-
-# ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
-@show(plt_reps)
+plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)")
 
 # ╔═╡ f777ae38-3aa2-4ec0-a6c5-1840b4133a20
-PH_neg, PH_pos = process_snapshot(vort)
+PH_neg, PH_pos = process_snapshot(vort, cut)
 
 # ╔═╡ d08db7ab-f9aa-4052-b67a-63c336a74b0d
 begin
-	@show propertynames(PH_neg[1][1])
-	R = PH_neg[1][end-2].representative
-	@show typeof(R)
-	vtx = vertices.(R)
-	@show typeof(vtx[1])
-	@show getindex.(vtx,1)
-
-	@show birth.(R)
-	findmax(birth.(R))
 
 	vtxReps = getH0pointRepresentative.(PH_neg[1], :min)
+
+
 end
 
 
@@ -398,6 +436,16 @@ begin
 			ylims=(-50,50), markercolor=:blue)
 	@show(plt_flip)
 	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
+end
+
+# ╔═╡ fbcf171a-fd41-47b8-b08a-23c937b26647
+begin
+	neg_reps = getH0pointRepresentative.(PH_neg[1])
+	pos_reps = getH0pointRepresentative.(PH_pos[1])
+
+	plotH0pointRepresentatives!(pos_reps, plot_handle, Xx, Yy,markercolor=:magenta)
+	
+	plotH0pointRepresentatives!(neg_reps, plot_handle, Xx, Yy, markercolor=:green)
 end
 
 # ╔═╡ 917d2df6-e9ff-4f91-96af-ce6e32c68624
@@ -2418,7 +2466,9 @@ version = "1.4.1+0"
 # ╠═43e81d74-37d8-4574-b06e-a57be04fe6be
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
 # ╠═fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
-# ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╠═e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╠═a352efd1-b8ce-4dd4-826e-b08790ee7581
+# ╠═44642851-9f6e-42fd-981a-171043dbf10f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
 # ╠═fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
@@ -2434,8 +2484,11 @@ version = "1.4.1+0"
 # ╠═f777ae38-3aa2-4ec0-a6c5-1840b4133a20
 # ╠═d08db7ab-f9aa-4052-b67a-63c336a74b0d
 # ╟─630acaf0-4b21-4ed7-893f-7eaf6ade2403
+# ╠═8da5c1a0-ace0-4a67-944a-fa5b2922cbce
 # ╠═bd169286-1dee-493a-8854-5e165f13027e
+# ╠═fbcf171a-fd41-47b8-b08a-23c937b26647
 # ╠═d9659877-8585-4ee4-923a-dc0dd990beb2
+# ╠═f542d8cb-7ce1-4156-b57b-4be802381e56
 # ╠═917d2df6-e9ff-4f91-96af-ce6e32c68624
 # ╠═1754b2dd-0ef8-4d68-8e30-1d8847c62299
 # ╠═75784082-b66e-472c-95a2-ae18249d4d2d
