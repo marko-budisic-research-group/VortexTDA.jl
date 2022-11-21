@@ -36,6 +36,9 @@ using LazyGrids
 # ╔═╡ fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 using PlutoUI
 
+# ╔═╡ 5f81f236-0f8e-405b-aa29-63da25a6ef8c
+using DataFrames
+
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
@@ -411,23 +414,54 @@ md"""
 Produce traces : $(@bind doDistanceTraces CheckBox(default=false))
 """
 
-# ╔═╡ aa2c0617-578b-45ab-904b-d641dcae3f53
+# ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
+if doDistanceTraces
+	# compute compound distance - this is like treating distance as 
+	# a 2-element vector - distance along (H0,H1) - then computing the norm 
+	# of that vector compatible with the PH distance used (inf for Bottleneck, 2 for Wasserstein) -- this is likely what we want to use
+	@show dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein()), 
+		PHpos; skip=1 )
 
+	plot(dWassPOS)
+end
+
+# ╔═╡ 823da704-1281-428a-9c30-f70807bf56bf
+"""
+	pair_op computes a pair operation (e.g. a distance) between skip-separated elements of the vector, by sliding the skip window along it
+"""
+function pair_op( op, v; skip=1 ) 
+	return [ op(a,b) for (a,b) in zip(v[1:end-skip], v[1+skip:end]) ] 
+end
 
 # ╔═╡ 14a43458-3962-4ca0-abaf-938db2f32c5a
-# ╠═╡ disabled = true
-#=╠═╡
 """
 Compute the distance dtype between two persistent diagrams.
 Supported dtype = Bottleneck() or Wasserstein()
 """
-function distance( dtype, PH_A, PH_B)
+function distance( PH_A, PH_B; dtype=Wasserstein())
 
 
 	distances = dtype(PH_A, PH_B; matching=false)
 
 end
-  ╠═╡ =#
+
+# ╔═╡ 5535b772-62e5-46ff-972d-945bdea199be
+function distance_time_traces( snapshots, skip=1 )
+	PHpos = getindex.(snapshots, (:PHpos) )
+	PHneg = getindex.(snapshots, (:PHneg) )
+
+	ff(ss, dd) = pair_op( (x,y) -> distance(x,y; dtype=dd), ss; skip=skip )
+
+	out = DataFrame(
+		POS_W = ff(PHpos, Wasserstein() ),
+		POS_B = ff(PHpos, Bottleneck() ),
+		NEG_W = ff(PHneg, Wasserstein() ),
+		NEG_B = ff(PHneg, Bottleneck() )
+	)				 
+
+	return out 
+
+end
 
 # ╔═╡ 5d5090ae-8083-40d1-8ac0-38a2f9555733
 md"""
@@ -605,14 +639,30 @@ if issaving
 	savefig( plot_PD_handle,joinpath(local_path,PDfile))
 end
 
-# ╔═╡ a90b7650-0bd8-4bb2-b509-063ce910d090
-Wasserstein()( PH_neg[2], PH_pos[1]; matching=false )
-
 # ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
-snapshots = Dict( [:PHpos, :PHneg, :XY, :vort] .=> [snapshot_and_PD.(1, (panel); cutoff=cut)...] )
+if doDistanceTraces
+	t = 1:10;
 
-# ╔═╡ 43c5f772-7a59-4849-8ae5-627feb946869
-snapshots
+	# extract snapshots
+	snapshots = snapshot_and_PD.(t, (panel); cutoff=cut);
+
+
+	# retrieve all PHpos for snapshots
+	PHpos = getindex.(snapshots, (:PHpos) )
+	PHneg = getindex.(snapshots, (:PHneg) )
+
+
+	# # some demos - notice that the only thing that changes is the function we are passing as the first argument of pair_op
+
+	# # compute distance function separately along each dimension of PH
+	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein()), PHpos; skip=1 )
+
+	# # compute distance function separately along each dimension of PH,
+	# # then extract time trace of distances along H0
+	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein())[1], PHpos; skip=1 )
+
+end;
+
 
 # ╔═╡ c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
 
@@ -690,6 +740,7 @@ end;
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
@@ -705,6 +756,7 @@ Ripserer = "aa79e827-bd0b-42a8-9f10-2b302677a641"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 
 [compat]
+DataFrames = "~1.4.2"
 Distances = "~0.10.7"
 Images = "~0.25.2"
 JLD2 = "~0.4.25"
@@ -724,7 +776,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "4b0337320ee178e0e4e20dad8e9207fbfe9bb18a"
+project_hash = "008d299fc1b04c06488b37fec059e18a79fb3f2d"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -918,6 +970,12 @@ version = "1.0.2"
 git-tree-sha1 = "46d2680e618f8abd007bce0c3026cb0c4a8f2032"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.12.0"
+
+[[deps.DataFrames]]
+deps = ["Compat", "DataAPI", "Future", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SnoopPrecompile", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "5b93f1b47eec9b7194814e40542752418546679f"
+uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+version = "1.4.2"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -1325,6 +1383,11 @@ deps = ["Test"]
 git-tree-sha1 = "49510dfcb407e572524ba94aeae2fced1f3feb0f"
 uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.8"
+
+[[deps.InvertedIndices]]
+git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
+uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
+version = "1.1.0"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
@@ -1766,6 +1829,12 @@ deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNu
 git-tree-sha1 = "efc140104e6d0ae3e7e30d56c98c4a927154d684"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.48"
+
+[[deps.PooledArrays]]
+deps = ["DataAPI", "Future"]
+git-tree-sha1 = "a6062fe4063cdafe78f4a0a81cfffb89721b30e7"
+uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
+version = "1.4.2"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -2427,10 +2496,11 @@ version = "1.4.1+0"
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
+# ╠═5f81f236-0f8e-405b-aa29-63da25a6ef8c
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
-# ╠═43c5f772-7a59-4849-8ae5-627feb946869
-# ╠═aa2c0617-578b-45ab-904b-d641dcae3f53
-# ╠═a90b7650-0bd8-4bb2-b509-063ce910d090
+# ╠═51bcc13d-ea96-4a38-9246-c32f27fb46d7
+# ╠═5535b772-62e5-46ff-972d-945bdea199be
+# ╠═823da704-1281-428a-9c30-f70807bf56bf
 # ╠═14a43458-3962-4ca0-abaf-938db2f32c5a
 # ╟─5d5090ae-8083-40d1-8ac0-38a2f9555733
 # ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
