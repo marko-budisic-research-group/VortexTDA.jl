@@ -348,6 +348,11 @@ function plotH1representativeVector!(
 
 end
 
+# ╔═╡ d3a963e8-9508-4a93-8c49-5013af4c9ff1
+md"""
+## PlotAll
+"""
+
 # ╔═╡ 116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 md"""
 # Plot Persistence Diagram
@@ -614,7 +619,7 @@ function plotall( snapshot;
 	end
 
 	### PLOTTING PD
-	pd_handle = plotPDs( PH_pos, PH_neg )
+	pd_handle = plotPDs( PH_pos, PH_neg; xlims=(-50,50),ylims=(-50,50) )
 
 	return plot_handle, pd_handle
 
@@ -684,7 +689,7 @@ end;
 # ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 if doDistanceTraces
 	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was";; "PHpos Bot"])
-	vline!(ptrace,[left], label="Comparison",linestyle=:dashdot)
+	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot)
 end
 
 # ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
@@ -692,7 +697,7 @@ if doDistanceTraces
 	l = @layout [a; b c; d e]
 	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)" )
 	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)" )
-	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l)
+	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l,size=(1200,1024))
 end
 
 # ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
@@ -2441,6 +2446,7 @@ version = "1.4.1+0"
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
 # ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
+# ╟─d3a963e8-9508-4a93-8c49-5013af4c9ff1
 # ╠═9714864a-1172-4331-8d70-a92baf41b950
 # ╠═a7d81dd1-74c3-4242-a840-fbf638e9e0ab
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
