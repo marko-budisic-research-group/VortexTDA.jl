@@ -36,9 +36,6 @@ using LazyGrids
 # ╔═╡ fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 using PlutoUI
 
-# ╔═╡ 5f81f236-0f8e-405b-aa29-63da25a6ef8c
-using DataFrames
-
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
@@ -414,17 +411,6 @@ md"""
 Produce traces : $(@bind doDistanceTraces CheckBox(default=false))
 """
 
-# ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
-if doDistanceTraces
-	# compute compound distance - this is like treating distance as 
-	# a 2-element vector - distance along (H0,H1) - then computing the norm 
-	# of that vector compatible with the PH distance used (inf for Bottleneck, 2 for Wasserstein) -- this is likely what we want to use
-	@show dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein()), 
-		PHpos; skip=1 )
-
-	plot(dWassPOS)
-end
-
 # ╔═╡ 823da704-1281-428a-9c30-f70807bf56bf
 """
 	pair_op computes a pair operation (e.g. a distance) between skip-separated elements of the vector, by sliding the skip window along it
@@ -467,37 +453,6 @@ end
 md"""
 # Saving files
 """
-
-# ╔═╡ dceda673-041d-49be-82ae-740f329c0ec1
-md"""
-# Appendix (as-of-yet-untouched code)
-"""
-
-# ╔═╡ 4cccd339-80bb-4612-a28f-c312fc4c8fbb
-# #savefig(PH_neg_diag,PHneg_sav_path * "/Will_vort_cut$(cut)_PHneg_"*lpad(j,3,"0")*".pdf")
-# savefig(PH_neg_diag, "C:\\Users\\yiran\\Downloads" * "\\PH_neg_diag_" * "P"* string(panel) * "C" * string(case) * "_Combo"*lpad(j,3,"0")*".png")
-
-# ╔═╡ 4a18a195-83f6-4982-97ac-45994b60ccf4
- # savefig(PH_pos_diag,"C:\\Users\\yiran\\Downloads\\"*"cutoff_PD_4.png")
-
-# ╔═╡ 4d40e097-7d0f-43ca-996c-381e88675eca
-# #savefig(PH_pos_diag,PHpos_sav_path * "/Will_vort_cut$(cut)_PHpos_"*lpad(j,3,"0")*".pdf")
-# savefig(PH_pos_diag, "C:\\Users\\yiran\\Downloads" * "\\PH_pos_diag_" * "P"* string(panel) * "C" * string(case) * "_Combo"*lpad(j,3,"0")*".png")
-
-# ╔═╡ cdaecc5b-f37f-414c-897b-c646cc8aa7ad
-# begin
-# for (interval, cidx) in zip(PH_neg[1],1:length(PH_neg[1]))
-# 		pindex = vertices.(interval.representative)
-#     	for nelement in pindex
-#         	plot!(plt_reps, Xx[[nelement[1][2],nelement[2][2]]],Yy[[nelement[1][1],
-# 			nelement[2][1]]]; 
-# 			linewidth=2, 
-# 			#color=:gray,
-# 			color=:black,
-# 			palette=:Set1_9)
-#     	end
-# 	end
-# end;
 
 # ╔═╡ bdd1e568-3770-4931-b283-4841b1916e14
 md"""
@@ -625,23 +580,54 @@ begin
 end
 
 
+# ╔═╡ 9714864a-1172-4331-8d70-a92baf41b950
+"""
+Plot everything one needs for a snapshot.
+"""
+function plotall( snapshot;
+	plot_title = "$(caselabel) : snapshot = $(j)/$(nsnapshots)",
+	H0 = showH0, H1=showH1
+ )
+
+	#### PLOTTING REPRESENTATIVES
+	PH_neg = snapshot[:PHneg]
+	PH_pos = snapshot[:PHpos]
+
+	# background - 
+	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort],plot_title);
+
+	if H0
+	neg_reps0 = getH0representativePoint.(PH_neg[1])
+	pos_reps0 = getH0representativePoint.(PH_pos[1])
+
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
+	end
+
+	if H1
+	neg_reps1 = getH1representativeVector.(PH_neg[2])
+	pos_reps1 = getH1representativeVector.(PH_pos[2])
+
+	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+	
+	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	end
+
+	### PLOTTING PD
+	pd_handle = plotPDs( PH_pos, PH_neg )
+
+	return plot_handle, pd_handle
+
+end
+
 # ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
 plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
 						title=plot_title,
 						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
 
-# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
-if issaving 
-	snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
-	PDfile = "pd_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
-
-	savefig( plot_handle,joinpath(local_path,snapshotfile)),
-	savefig( plot_PD_handle,joinpath(local_path,PDfile))
-end
-
 # ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
 if doDistanceTraces
-	t = 1:10;
+	t = 1:25;
 
 	# extract snapshots
 	snapshots = snapshot_and_PD.(t, (panel); cutoff=cut);
@@ -664,83 +650,66 @@ if doDistanceTraces
 end;
 
 
-# ╔═╡ c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
+# ╔═╡ a7d81dd1-74c3-4242-a840-fbf638e9e0ab
+plotall(snapshots[1])[2]
 
+# ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
+if doDistanceTraces
+	# compute compound distance - this is like treating distance as 
+	# a 2-element vector - distance along (H0,H1) - then computing the norm 
+	# of that vector compatible with the PH distance used (inf for Bottleneck, 2 for Wasserstein) -- this is likely what we want to use
+	dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein()), 
+		PHpos; skip=1 )
+	dBottlePOS = pair_op( (x,y) -> distance(x,y; dtype=Bottleneck()), 
+		PHpos; skip=1 )
 
-# ╔═╡ 32c0e73e-4b7e-4dda-92cc-312d0762458c
-#=╠═╡
-begin
-	PHA_neg, PHA_pos = process_snapshot(1, panel, cut)
-	PHB_neg, PHB_pos = process_snapshot(2, panel, cut)
-	@show typeof(PHA_neg)
-	distance( Bottleneck(), PHA_neg, PHB_neg )
 end
-  ╠═╡ =#
 
-# ╔═╡ 4ac04dfc-1927-4e5c-be99-2ec883b9e97f
-#=╠═╡
-# Wasserstein and Bottleneck distances 
-begin
-	# cd(vort_path)
-	# sl = 1
-	# for sl in 1:length(fdir)
-	# end
-	sl2 = j + 1
-	PH_neg2, PH_pos2 = process_snapshot(j+1, panel, cut)
+# ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
+md"""
+### Peak distance
 
-	bottlepos_H0 = distance( Bottleneck(), PH_pos, PH_pos2 )
-	bottlepos_H0 = distance( Bottleneck(), PH_neg, PH_neg2 )
-	wasserpos_H0 = distance( Wasserstein(), PH_pos, PH_pos2 )
-	wasserpos_H0 = distance( Wasserstein(), PH_neg, PH_neg2 )
+Let's compare neighboring traces:
+- Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],show_value=true) )
+- Use peak Wasserstein instead? $(@bind usepeak CheckBox(default=true))
 
+"""
 
-	# wasspos_H0 = Wasserstein()(pos1_H0, pos2_H0; matching = false)
-	#wasspos_H1 = Wasserstein()(pos1_H1, pos2_H1; matching = true)
-
-	# wassneg_H0 = Wasserstein()(neg1_H0, neg2_H0; matching = false)
-	#wassneg_H1 = Wasserstein()(neg1_H1, neg2_H1; matching = true)
-
-	# plt_bH0pos = plot(bottlepos_H0; title = "Bottleneck H0 Pos: $j - $sl2", xlims=(-50,50), ylims=(-50,50))
-	# plt_bH0neg = plot(bottleneg_H0; title = "Bottleneck H0 Neg: $j - $sl2", xlims=(-50,50), ylims=(-50,50))
-
-	# plt_wH0pos = plot(wasspos_H0; title = "Wasserstein H0 Pos: $j - $sl2",xlims=(-50,50), ylims=(-50,50))
-	# plt_wH0neg = plot(wassneg_H0; title = "Wasserstein H0 Neg: $j - $sl2",xlims=(-50,50), ylims=(-50,50))
-
-	#plt_bH1pos = plot(bottlepos_H1)
-	#plt_bH1neg = plot(bottleneg_H1)
-
-	#plt_wH1pos = plot(wasspos_H1)
-	#plt_wH1neg = plot(wassneg_H1)
-
-	# savefig(plt_bH0pos,sav_path * "\\botth0pos\\Combo"*lpad(j,3,"0")*"-"*lpad(sl2,3,"0")*"_BottH0pos.png")
-	# savefig(plt_bH0neg,sav_path * "\\botth0neg\\Combo"*lpad(j,3,"0")*"-"*lpad(sl2,3,"0")*"_BottH0neg.png")
-	# savefig(plt_wH0pos,sav_path * "\\wassh0pos\\Combo"*lpad(j,3,"0")*"-"*lpad(sl2,3,"0")*"_WassH0pos.png")
-	# savefig(plt_wH0neg,sav_path * "\\wassh0neg\\Combo"*lpad(j,3,"0")*"-"*lpad(sl2,3,"0")*"_WassH0neg.png")
-	
+# ╔═╡ 12c522ed-788c-43e7-9046-d357fc28a4be
+if doDistanceTraces
+	peakdifference = findmax(dWassPOS)[2]
+	left = usepeak ? peakdifference : left_trace
 end;
-  ╠═╡ =#
 
-# ╔═╡ 785ca952-ca75-4d18-a51a-15d8898af15b
-#=╠═╡
-@show(bottlepos_H0)
-  ╠═╡ =#
+# ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
+if doDistanceTraces
+	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was";; "PHpos Bot"])
+	vline!(ptrace,[left], label="Comparison",linestyle=:dashdot)
+end
 
-# ╔═╡ 71a4ab9a-d8e5-4229-a770-f556c32f215c
-# @show(bottlepos_H0)
+# ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
+if doDistanceTraces
+	l = @layout [a; b c; d e]
+	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)" )
+	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)" )
+	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l)
+end
 
-# ╔═╡ 9d45e2f8-83f5-42ea-ba53-7cc05b21f83a
-# @show(bottlepos_H1)
+# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
+if issaving 
+	snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
+	PDfile = "pd_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
+	compfile = "comp_$(caselabel)_$(@sprintf("%02d", left)).$(ext)"
 
-# ╔═╡ 20012026-d0e2-4a26-a5cc-87e2d1e81f74
-# @show(wasspos_H0)
+	savefig( plot_handle,joinpath(local_path,snapshotfile)),
+	savefig( plot_PD_handle,joinpath(local_path,PDfile)),
+	savefig( comparison_plot,joinpath(local_path,compfile))
 
-# ╔═╡ 0b9e52e7-b2ab-4f86-a847-333994d2529b
-# @show(wasspos_H1)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
@@ -756,7 +725,6 @@ Ripserer = "aa79e827-bd0b-42a8-9f10-2b302677a641"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 
 [compat]
-DataFrames = "~1.4.2"
 Distances = "~0.10.7"
 Images = "~0.25.2"
 JLD2 = "~0.4.25"
@@ -776,7 +744,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "008d299fc1b04c06488b37fec059e18a79fb3f2d"
+project_hash = "458eae689b95bb59c869b640e042528e9672d89e"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -970,12 +938,6 @@ version = "1.0.2"
 git-tree-sha1 = "46d2680e618f8abd007bce0c3026cb0c4a8f2032"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.12.0"
-
-[[deps.DataFrames]]
-deps = ["Compat", "DataAPI", "Future", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SnoopPrecompile", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "5b93f1b47eec9b7194814e40542752418546679f"
-uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "1.4.2"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -1383,11 +1345,6 @@ deps = ["Test"]
 git-tree-sha1 = "49510dfcb407e572524ba94aeae2fced1f3feb0f"
 uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.8"
-
-[[deps.InvertedIndices]]
-git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
-uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
-version = "1.1.0"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
@@ -1829,12 +1786,6 @@ deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNu
 git-tree-sha1 = "efc140104e6d0ae3e7e30d56c98c4a927154d684"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.48"
-
-[[deps.PooledArrays]]
-deps = ["DataAPI", "Future"]
-git-tree-sha1 = "a6062fe4063cdafe78f4a0a81cfffb89721b30e7"
-uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
-version = "1.4.2"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -2490,37 +2441,29 @@ version = "1.4.1+0"
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
 # ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
+# ╠═9714864a-1172-4331-8d70-a92baf41b950
+# ╠═a7d81dd1-74c3-4242-a840-fbf638e9e0ab
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
-# ╠═5f81f236-0f8e-405b-aa29-63da25a6ef8c
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
 # ╠═51bcc13d-ea96-4a38-9246-c32f27fb46d7
+# ╠═a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
+# ╟─72f30f80-e20a-4b70-af17-967b52daf023
+# ╠═12c522ed-788c-43e7-9046-d357fc28a4be
+# ╠═84285ce0-9f49-4f75-be84-2125a35b5e75
 # ╠═5535b772-62e5-46ff-972d-945bdea199be
 # ╠═823da704-1281-428a-9c30-f70807bf56bf
 # ╠═14a43458-3962-4ca0-abaf-938db2f32c5a
 # ╟─5d5090ae-8083-40d1-8ac0-38a2f9555733
 # ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
-# ╟─dceda673-041d-49be-82ae-740f329c0ec1
-# ╠═4cccd339-80bb-4612-a28f-c312fc4c8fbb
-# ╠═4a18a195-83f6-4982-97ac-45994b60ccf4
-# ╠═4d40e097-7d0f-43ca-996c-381e88675eca
-# ╠═cdaecc5b-f37f-414c-897b-c646cc8aa7ad
 # ╟─bdd1e568-3770-4931-b283-4841b1916e14
 # ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
-# ╠═c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
-# ╠═32c0e73e-4b7e-4dda-92cc-312d0762458c
-# ╠═4ac04dfc-1927-4e5c-be99-2ec883b9e97f
-# ╠═785ca952-ca75-4d18-a51a-15d8898af15b
-# ╠═71a4ab9a-d8e5-4229-a770-f556c32f215c
-# ╠═9d45e2f8-83f5-42ea-ba53-7cc05b21f83a
-# ╠═20012026-d0e2-4a26-a5cc-87e2d1e81f74
-# ╠═0b9e52e7-b2ab-4f86-a847-333994d2529b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
