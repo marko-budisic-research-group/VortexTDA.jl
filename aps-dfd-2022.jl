@@ -51,6 +51,8 @@ md"""
 # ╔═╡ a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 md"""
 ## Panel parameters
+
+  - Plate motion $(@bind caselabel Select([:Heaving,:Pitching,:HeavingAndPitching]))
 """
 
 # ╔═╡ 523b6671-00c3-45c8-92ba-f8540829dcd7
@@ -106,24 +108,6 @@ function melissas_path(panelcase)
 	return vort_path, sav_path, local_sav_path
 end;
 
-# ╔═╡ 56bd1c69-2d1e-4cd6-9603-7d986512f215
-md"""
-# Visualize a single snapshot
-"""
-
-# ╔═╡ e3d69201-3c69-4835-bc81-9c46ed86d8cf
-md"""
-Tune the following values:
-  - Autoplay snapshots $(@bind autoplay CheckBox(default=false))
-  - Topological noise cutoff $(@bind cut Slider(0:0.01:10, show_value = true, default=0.5))
-  - Plate motion $(@bind caselabel Select([:Heaving,:Pitching,:HeavingAndPitching]))
-  - Show H0? $(@bind showH0 CheckBox(default=true))
-  - Show H1? $(@bind showH1 CheckBox(default=true))
-
-- Saving? $(@bind issaving CheckBox(default=false))
-- Extension: $(@bind ext Select(["png","pdf"]))
-"""
-
 # ╔═╡ c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 begin
 	panelcase = "P$(panel)C$(CaseToFile[caselabel])"
@@ -147,6 +131,23 @@ begin
 	@show vort_path
 	@show sav_path
 end;
+
+# ╔═╡ 56bd1c69-2d1e-4cd6-9603-7d986512f215
+md"""
+# Visualize a single snapshot
+"""
+
+# ╔═╡ e3d69201-3c69-4835-bc81-9c46ed86d8cf
+md"""
+Tune the following values:
+  - Autoplay snapshots $(@bind autoplay PlutoUI.CheckBox(default=false))
+  - Topological noise cutoff $(@bind cut PlutoUI.Slider(0:0.01:10, show_value = true, default=0.5))
+  - Show H0? $(@bind showH0 CheckBox(default=true))
+  - Show H1? $(@bind showH1 CheckBox(default=true))
+
+- Saving? $(@bind issaving CheckBox(default=false))
+- Extension: $(@bind ext Select(["png","pdf"]))
+"""
 
 # ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
 """
@@ -471,9 +472,9 @@ Switches between a PlotUI.Slider and PlotUI.Clock as a way of making a selection
 """
 function snapshotselectorUI(sel,N=nsnapshots)
 	if sel
-		return Clock(interval=1,max_value = N,start_running=true)
+		return PlutoUI.Clock(interval=1,max_value = N,start_running=true)
 	else
-		return Slider(1:N, show_value=true)
+		return PlutoUI.Slider(1:N, show_value=true)
 	end
 end
 
@@ -672,7 +673,7 @@ end
 
 # ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
 md"""
-### Peak distance
+### Peak distance and trace comparison
 
 Let's compare neighboring traces:
 - Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],show_value=true) )
@@ -2416,7 +2417,7 @@ version = "1.4.1+0"
 # ╟─f4f66a74-5a05-498a-b3db-b7973241429f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
-# ╠═fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
+# ╟─fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
 # ╠═c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
