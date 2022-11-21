@@ -41,7 +41,7 @@ TableOfContents()
 
 # ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
 # set all fonts in the Plots.jl to LaTeX-style fonts
-Plots.default(fontfamily = "Computer Modern")
+Plots.default(fontfamily = "serif")
 
 # ╔═╡ f4f66a74-5a05-498a-b3db-b7973241429f
 md"""
@@ -366,6 +366,62 @@ function plotH1representativeVector!(
 
 end
 
+# ╔═╡ 116787f6-a4d9-48c8-8b2f-fb75a434ef1d
+md"""
+# Plot Persistence Diagram
+
+Flipping the axes in PD is implemented by creating a deep copy of `PersistenceDiagram` object, in which all its `PersistenceIntervals` have swapped birth/death or sign of birth/death changed or both.
+
+Then a plotting function simply invokes the usual PD plotter on each of them, and changes their labels/axes so that it's disambiguated.
+
+It's not clear to me which one we should use, so I left it as option-driven so we can try things out. We probably need to check on some imaginary function what should work.
+"""
+
+# ╔═╡ 9c867fb4-f2a4-481d-add0-5230b220e14e
+md"""
+ Swap axes $(@bind axswap CheckBox(default=false))
+ Flip sign $(@bind sgnflip CheckBox(default=true))
+"""
+
+# ╔═╡ 3f12b14b-ffd2-47e7-a480-52e0be81a157
+"""
+Swap the existing persistence diagram series so that instead of being plotted into top triangle of the 1st quadrant, it is plotted in the bottom triangle. Also flip sign of the interval values.
+
+This is useful when one wants to plot both superlevel and sublevel set PD on the same graph. Sign flip is used when superlevel PD was computed as sublevel PD of a negative of the data.
+
+"""
+function flipPD( input :: PersistenceDiagram; axisswap=true, signflip=true )
+
+	m = signflip ? -1 : 1;
+	swap = axisswap ? reverse : x -> x;
+	output = PersistenceDiagram(
+		[ PersistenceInterval( swap(m.*pi)...; pi.meta...)   for pi in input ];
+		input.meta ... 
+	)
+
+	return output
+
+end
+
+# ╔═╡ 58a89334-759c-4acb-8542-cf1491f6440d
+"""
+Plots sublevel (positive) and superlevel (negative) persistence diagrams, with the option of either swapping axes or signs for the negative PD.
+
+TODO At this point, it's not clear to me (=Marko) what should be the default
+
+"""
+function plotPDs( PD_pos, PD_neg; 
+				  neg_swap_axes=false, neg_flip_sign=true, kwargs... )
+	@show PD_pos
+	@show PD_neg
+	P = plot(PD_pos;
+		seriescolor=[:blue, :green], label =["Subl. H₀" "Subl. H₁"], kwargs...)
+	
+	plot!(P, flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
+			seriescolor=[:red, :orange], label =["Superl. H₀" "Superl. H₁"], kwargs... )
+	return P
+end
+
 # ╔═╡ 5d5090ae-8083-40d1-8ac0-38a2f9555733
 md"""
 # Saving files
@@ -534,6 +590,10 @@ begin
 	if showH1; neg_reps1; end # this is here simply to redisplay the image after checkbox changes
 	plot_handle
 end
+
+# ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
+plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
+						neg_swap_axes = axswap, neg_flip_sign = sgnflip)
 
 # ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
 @show(PH_neg[1])
@@ -2392,6 +2452,11 @@ version = "1.4.1+0"
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
 # ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
+# ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
+# ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
+# ╠═3e859ca2-e53a-4713-a374-44df73b5a485
+# ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
+# ╠═58a89334-759c-4acb-8542-cf1491f6440d
 # ╠═5d5090ae-8083-40d1-8ac0-38a2f9555733
 # ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
 # ╟─dceda673-041d-49be-82ae-740f329c0ec1
