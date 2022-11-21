@@ -190,9 +190,7 @@ md"""
 function PH_of_snapshot( input, cutoff=0)
 	f(v) = ripserer( Cubical(v),
 		cutoff=cutoff, reps=true, alg=:homology )
-	PH_pos = f(input)
-	PH_neg = f(-input)
-	return PH_neg, PH_pos
+	return f(input), f(-input)
 end
 
 # ╔═╡ 630acaf0-4b21-4ed7-893f-7eaf6ade2403
@@ -415,10 +413,10 @@ function plotPDs( PD_pos, PD_neg;
 	@show PD_pos
 	@show PD_neg
 	P = plot(PD_pos;
-		seriescolor=[:blue, :green], label =["Subl. H₀" "Subl. H₁"], kwargs...)
+		seriescolor=[:blue, :green], label =[L"Subl. $H_0$" L"Subl. $H_1$"], kwargs...)
 	
 	plot!(P, flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
-			seriescolor=[:red, :orange], label =["Superl. H₀" "Superl. H₁"], kwargs... )
+			seriescolor=[:red, :orange], label =[L"Superl. $H_0$" L"Superl. $H_1$"], kwargs... )
 	return P
 end
 
@@ -431,23 +429,6 @@ md"""
 md"""
 # Appendix (as-of-yet-untouched code)
 """
-
-# ╔═╡ 53091b20-ce7a-4560-b33c-4bf0977a275c
-@show(plt_reps)
-
-# ╔═╡ a3d6464f-2349-49b6-8fc8-bcd623d8403b
-# savefig(plt_reps,"C:\\Users\\yiran\\Downloads\\"*"cutoff_rep_4.png")
-
-# ╔═╡ b3246f7f-c7c4-4b6b-8345-933eff406dc1
-# ╠═╡ disabled = true
-#=╠═╡
-savefig(plt_reps,sav_path * "/Will_vort_cut$(cut)_reps_"*lpad(j,3,"0")*".pdf")
-  ╠═╡ =#
-
-# ╔═╡ 72fb919f-f987-4f5e-84bb-1ad98701fb38
-# begin
-# savefig(plt_reps,sav_path * "/Combo"*lpad(j,3,"0")*".png")
-# end;
 
 # ╔═╡ 4cccd339-80bb-4612-a28f-c312fc4c8fbb
 # #savefig(PH_neg_diag,PHneg_sav_path * "/Will_vort_cut$(cut)_PHneg_"*lpad(j,3,"0")*".pdf")
@@ -475,34 +456,10 @@ savefig(plt_reps,sav_path * "/Will_vort_cut$(cut)_reps_"*lpad(j,3,"0")*".pdf")
 # 	end
 # end;
 
-# ╔═╡ 65c28246-9da7-495d-8ec6-31c0525f93d0
-# swapping birth / death indexes for persistence diagrams
-# begin
-# birth_neg = fill(0.0,length(PH_neg[1]))
-# death_neg = fill(0.0,length(PH_neg[1]))
-# for cidx in 1:length(PH_neg[1])
-# b_temp = birth(PH_neg[1][cidx])
-# d_temp = death(PH_neg[1][cidx])
-# 	# @show(b_temp)
-# 	# @show(d_temp)
-# 	birth_neg[cidx] = d_temp
-# 	death_neg[cidx] = b_temp
-# 	# @show(birth_neg)
-# 	# @show(death_neg)
-	
-# end
-# birth_neg = Tuple(Float64(x) for x in birth_neg)
-# death_neg = Tuple(Float64(x) for x in death_neg)
-
-# neg_interval = PersistenceDiagram([(birth_neg[end-3],death_neg[end-3]),(birth_neg[end-2],death_neg[end-2]),(birth_neg[end-1], death_neg[end-1]),(birth_neg[end], death_neg[end])]; dim=0)
-# # @show(neg_interval)
-# end;
-
-# ╔═╡ 68b871e1-b5d5-4fb0-99f4-6eada1608415
-@show(birth_neg)
-
-# ╔═╡ c2b59ddc-1978-4ef7-a51a-f873e4327b73
-@show(death_neg)
+# ╔═╡ bdd1e568-3770-4931-b283-4841b1916e14
+md"""
+# Utility functions
+"""
 
 # ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
 """
@@ -551,14 +508,9 @@ end;
 
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
-	plot_handle = display_vorticity(Xx,Yy,vort,"$(caselabel) : snapshot = $(j)/$(nsnapshots)");
+	plot_title = "$(caselabel) : snapshot = $(j)/$(nsnapshots)"
+	plot_handle = display_vorticity(Xx,Yy,vort,plot_title);
 end;
-
-# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
-if issaving 
-	@show snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
-	savefig( plot_handle,joinpath(local_path,snapshotfile))
-end
 
 # ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
 if showH0
@@ -592,47 +544,18 @@ begin
 end
 
 # ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
-plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
-						neg_swap_axes = axswap, neg_flip_sign = sgnflip)
+plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
+						title=plot_title,
+						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
 
-# ╔═╡ b1967a32-d241-4c66-803b-5f19c8703141
-@show(PH_neg[1])
+# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
+if issaving 
+	snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
+	PDfile = "pd_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
 
-# ╔═╡ 909d5412-7748-4c7c-bbd5-24968620d008
-PH_neg_diag = plot(PH_neg,
-		xlims=(-50,50), 
-		ylims=(-50,50))
-
-# ╔═╡ 7f93214f-5a6f-4802-8720-e2e8d0d61674
-PH_pos_diag = plot(PH_pos,
-		xlims=(-50,50), 
-		ylims=(-50,50))
-
-# ╔═╡ b6ecc458-cd12-408f-aa0c-efccde6ad10f
-@show(PH_pos[1])
-
-# ╔═╡ 0763190c-24c8-4127-95f3-574de51ac6f8
-@show(PH_neg[1])
-
-# ╔═╡ b81b2591-f530-40c1-baff-d1e1a2082db2
-@show(PH_neg[1])
-
-# ╔═╡ 7ba5ef10-a135-48de-82fb-e1e3bcc6464e
-@show(PH_pos[1])
-
-# ╔═╡ 77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
-begin
-	plt_flip = plot(PH_pos[1];
-			xlims=(-50,50), 
-			ylims=(-50,50), markercolor=:red)
-	plot!(plt_flip,neg_interval; xlims=(-50,50), 
-			ylims=(-50,50), markercolor=:blue)
-	@show(plt_flip)
-	#savefig(plt_flip,"C:\\Users\\yiran\\Downloads\\"*"PD_"*lpad(j,3,"0")*".png")
+	savefig( plot_handle,joinpath(local_path,snapshotfile)),
+	savefig( plot_PD_handle,joinpath(local_path,PDfile))
 end
-
-# ╔═╡ 47d44aca-3fa5-486f-981f-73c402909c4e
-PH1_neg, PH1_pos = process_snapshot(1, panel, cut)
 
 # ╔═╡ c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
 
@@ -714,9 +637,6 @@ end;
 
 # ╔═╡ 0b9e52e7-b2ab-4f86-a847-333994d2529b
 # @show(wasspos_H1)
-
-# ╔═╡ 2a92c416-2095-43c5-bffd-b5cc1c0f70a2
-plot(PH_pos[2])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2457,32 +2377,17 @@ version = "1.4.1+0"
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
-# ╠═5d5090ae-8083-40d1-8ac0-38a2f9555733
+# ╟─5d5090ae-8083-40d1-8ac0-38a2f9555733
 # ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
 # ╟─dceda673-041d-49be-82ae-740f329c0ec1
-# ╠═b1967a32-d241-4c66-803b-5f19c8703141
-# ╠═53091b20-ce7a-4560-b33c-4bf0977a275c
-# ╠═a3d6464f-2349-49b6-8fc8-bcd623d8403b
-# ╠═b3246f7f-c7c4-4b6b-8345-933eff406dc1
-# ╠═72fb919f-f987-4f5e-84bb-1ad98701fb38
-# ╠═909d5412-7748-4c7c-bbd5-24968620d008
 # ╠═4cccd339-80bb-4612-a28f-c312fc4c8fbb
-# ╠═7f93214f-5a6f-4802-8720-e2e8d0d61674
 # ╠═4a18a195-83f6-4982-97ac-45994b60ccf4
 # ╠═4d40e097-7d0f-43ca-996c-381e88675eca
 # ╠═cdaecc5b-f37f-414c-897b-c646cc8aa7ad
-# ╠═b6ecc458-cd12-408f-aa0c-efccde6ad10f
-# ╠═0763190c-24c8-4127-95f3-574de51ac6f8
-# ╠═65c28246-9da7-495d-8ec6-31c0525f93d0
-# ╠═b81b2591-f530-40c1-baff-d1e1a2082db2
-# ╠═7ba5ef10-a135-48de-82fb-e1e3bcc6464e
-# ╠═68b871e1-b5d5-4fb0-99f4-6eada1608415
-# ╠═c2b59ddc-1978-4ef7-a51a-f873e4327b73
-# ╠═77e04cf9-6b99-4bd4-ab39-55f8a0d6f285
+# ╟─bdd1e568-3770-4931-b283-4841b1916e14
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
-# ╠═47d44aca-3fa5-486f-981f-73c402909c4e
 # ╠═c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
 # ╠═97c06931-82dd-43a5-826a-2e3a66f8a707
 # ╠═32c0e73e-4b7e-4dda-92cc-312d0762458c
@@ -2492,6 +2397,5 @@ version = "1.4.1+0"
 # ╠═9d45e2f8-83f5-42ea-ba53-7cc05b21f83a
 # ╠═20012026-d0e2-4a26-a5cc-87e2d1e81f74
 # ╠═0b9e52e7-b2ab-4f86-a847-333994d2529b
-# ╠═2a92c416-2095-43c5-bffd-b5cc1c0f70a2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
