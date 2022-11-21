@@ -411,6 +411,9 @@ md"""
 Produce traces : $(@bind doDistanceTraces CheckBox(default=false))
 """
 
+# ╔═╡ aa2c0617-578b-45ab-904b-d641dcae3f53
+
+
 # ╔═╡ 14a43458-3962-4ca0-abaf-938db2f32c5a
 # ╠═╡ disabled = true
 #=╠═╡
@@ -534,11 +537,21 @@ function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=cut)
 	XY = ndgrid(Yy, Xx)
 	vort = pad_by_value(vorticity, Inf, 1)	
 	PH_pos, PH_neg = PHs_of_field(vort, cut);
-	return PH_pos, PH_neg, XY, vort
+	return Dict( 
+		[:PHpos, :PHneg, :XY, :vort] .=> [PH_pos, PH_neg, XY, vort] 
+	)
 end
 
 # ╔═╡ eb15fcab-4261-48ad-88d2-b102a64785f3
-PH_pos, PH_neg, XY, vort = snapshot_and_PD(j, panel; cutoff=cut);
+begin
+sshot = snapshot_and_PD(j, panel; cutoff=cut);
+PH_pos, PH_neg, XY, vort = (
+	sshot[:PHpos], 
+	sshot[:PHneg], 
+	sshot[:XY],
+	sshot[:vort]
+) # extract the outputs into individual variables, for simplicity
+end
 
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
@@ -594,6 +607,12 @@ end
 
 # ╔═╡ a90b7650-0bd8-4bb2-b509-063ce910d090
 Wasserstein()( PH_neg[2], PH_pos[1]; matching=false )
+
+# ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
+snapshots = Dict( [:PHpos, :PHneg, :XY, :vort] .=> [snapshot_and_PD.(1, (panel); cutoff=cut)...] )
+
+# ╔═╡ 43c5f772-7a59-4849-8ae5-627feb946869
+snapshots
 
 # ╔═╡ c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
 
@@ -2408,6 +2427,9 @@ version = "1.4.1+0"
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
+# ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
+# ╠═43c5f772-7a59-4849-8ae5-627feb946869
+# ╠═aa2c0617-578b-45ab-904b-d641dcae3f53
 # ╠═a90b7650-0bd8-4bb2-b509-063ce910d090
 # ╠═14a43458-3962-4ca0-abaf-938db2f32c5a
 # ╟─5d5090ae-8083-40d1-8ac0-38a2f9555733
