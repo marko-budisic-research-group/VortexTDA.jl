@@ -148,29 +148,13 @@ begin
 	@show sav_path
 end;
 
-# ╔═╡ 7b157ef8-eb23-44b8-aed8-3c3673ab072e
-function snapshotselector(sel,N=nsnapshots)
-	if sel
-		@bind j Clock(interval=1,max_value = N,start_running=true)
-	else
-		@bind j Slider(1:N, show_value=true)
-	end
-end
-
-# ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
-md"""
-## Snapshot selection: 
-
-$(snapshotselector(autoplay))
-"""
-
 # ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
 """
 Plot vorticity field as a red/blue heatmap.
 """
-function display_vorticity(Xs,Ys,Vs,titlestring="")
+function display_vorticity(XY,Vs,titlestring="")
 
-	plot_handle = heatmap(Xs,Ys, Vs; title=titlestring,
+	plot_handle = heatmap(XY[2].v,XY[1].v, Vs; title=titlestring,
 		fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
 		colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
 		background_color = :transparent, 
@@ -187,7 +171,7 @@ md"""
 """
 
 # ╔═╡ d08db7ab-f9aa-4052-b67a-63c336a74b0d
-function PH_of_snapshot( input, cutoff=0)
+function PHs_of_field( input, cutoff=0)
 	f(v) = ripserer( Cubical(v),
 		cutoff=cutoff, reps=true, alg=:homology )
 	return f(input), f(-input)
@@ -420,6 +404,28 @@ function plotPDs( PD_pos, PD_neg;
 	return P
 end
 
+# ╔═╡ 8825772f-ca29-4457-a281-39d53f1794e0
+md"""
+# Computing distances
+
+Produce traces : $(@bind doDistanceTraces CheckBox(default=false))
+"""
+
+# ╔═╡ 14a43458-3962-4ca0-abaf-938db2f32c5a
+# ╠═╡ disabled = true
+#=╠═╡
+"""
+Compute the distance dtype between two persistent diagrams.
+Supported dtype = Bottleneck() or Wasserstein()
+"""
+function distance( dtype, PH_A, PH_B)
+
+
+	distances = dtype(PH_A, PH_B; matching=false)
+
+end
+  ╠═╡ =#
+
 # ╔═╡ 5d5090ae-8083-40d1-8ac0-38a2f9555733
 md"""
 # Saving files
@@ -461,12 +467,32 @@ md"""
 # Utility functions
 """
 
+# ╔═╡ 7b157ef8-eb23-44b8-aed8-3c3673ab072e
+"""
+Switches between a PlotUI.Slider and PlotUI.Clock as a way of making a selection.
+
+"""
+function snapshotselectorUI(sel,N=nsnapshots)
+	if sel
+		return Clock(interval=1,max_value = N,start_running=true)
+	else
+		return Slider(1:N, show_value=true)
+	end
+end
+
+# ╔═╡ 0d90f747-5130-4aa1-9b62-1267065fd5bc
+md"""
+## Snapshot selection: 
+
+Snapshot: $(@bind j snapshotselectorUI(autoplay))
+"""
+
 # ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
 """
 Fetch the X,Y,vorticity from the stored files.
 """
 function retrieve_snapshot( idx, panel_n )
-	cd(vort_path)
+	#cd(vort_path)
 	matvars = matread(joinpath( vort_path, readdir(vort_path)[idx] ))
 	vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
 	X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
@@ -497,19 +523,27 @@ function pad_grid(X,Y)
 end
 	
 
-# ╔═╡ a3288b63-fb14-4dbe-aa9d-8e630adf5096
-begin
-	X,Y,vorticity = retrieve_snapshot(j, panel)
+# ╔═╡ 8a3b3829-8756-44d8-b569-9f0ecc9a63ce
+"""
+Retrieve the coordinate grid, and compute PDs for a particular snapshot
+
+"""
+function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=cut)
+	X,Y,vorticity = retrieve_snapshot(snapshot_idx, snapshot_panel)
 	Xx, Yy = pad_grid(X,Y)
 	XY = ndgrid(Yy, Xx)
 	vort = pad_by_value(vorticity, Inf, 1)	
-	PH_neg, PH_pos = PH_of_snapshot(vort, cut);
-end;
+	PH_pos, PH_neg = PHs_of_field(vort, cut);
+	return PH_pos, PH_neg, XY, vort
+end
+
+# ╔═╡ eb15fcab-4261-48ad-88d2-b102a64785f3
+PH_pos, PH_neg, XY, vort = snapshot_and_PD(j, panel; cutoff=cut);
 
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
 	plot_title = "$(caselabel) : snapshot = $(j)/$(nsnapshots)"
-	plot_handle = display_vorticity(Xx,Yy,vort,plot_title);
+	plot_handle = display_vorticity(XY,vort,plot_title);
 end;
 
 # ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
@@ -543,6 +577,7 @@ begin
 	plot_handle
 end
 
+
 # ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
 plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
 						title=plot_title,
@@ -557,32 +592,24 @@ if issaving
 	savefig( plot_PD_handle,joinpath(local_path,PDfile))
 end
 
+# ╔═╡ a90b7650-0bd8-4bb2-b509-063ce910d090
+Wasserstein()( PH_neg[2], PH_pos[1]; matching=false )
+
 # ╔═╡ c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
 
 
-# ╔═╡ 97c06931-82dd-43a5-826a-2e3a66f8a707
-"""
-Compute the distance dtype between two persistent diagrams.
-Supported dtype = Bottleneck() or Wasserstein()
-"""
-function distance( dtype, PH_A, PH_B)
-
-	PD_A = PersistenceDiagram.(PH_A)
-	PD_B = PersistenceDiagram.(PH_B)
-
-	distances = dtype.(PH_A, PH_B; matching=false)
-
-end
-
 # ╔═╡ 32c0e73e-4b7e-4dda-92cc-312d0762458c
+#=╠═╡
 begin
 	PHA_neg, PHA_pos = process_snapshot(1, panel, cut)
 	PHB_neg, PHB_pos = process_snapshot(2, panel, cut)
 	@show typeof(PHA_neg)
 	distance( Bottleneck(), PHA_neg, PHB_neg )
 end
+  ╠═╡ =#
 
 # ╔═╡ 4ac04dfc-1927-4e5c-be99-2ec883b9e97f
+#=╠═╡
 # Wasserstein and Bottleneck distances 
 begin
 	# cd(vort_path)
@@ -622,9 +649,12 @@ begin
 	# savefig(plt_wH0neg,sav_path * "\\wassh0neg\\Combo"*lpad(j,3,"0")*"-"*lpad(sl2,3,"0")*"_WassH0neg.png")
 	
 end;
+  ╠═╡ =#
 
 # ╔═╡ 785ca952-ca75-4d18-a51a-15d8898af15b
+#=╠═╡
 @show(bottlepos_H0)
+  ╠═╡ =#
 
 # ╔═╡ 71a4ab9a-d8e5-4229-a770-f556c32f215c
 # @show(bottlepos_H0)
@@ -2351,8 +2381,8 @@ version = "1.4.1+0"
 # ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
 # ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
 # ╠═4224e4f8-6613-42b5-8ad5-23278f4caa21
-# ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
-# ╠═a3288b63-fb14-4dbe-aa9d-8e630adf5096
+# ╠═eb15fcab-4261-48ad-88d2-b102a64785f3
+# ╠═8a3b3829-8756-44d8-b569-9f0ecc9a63ce
 # ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
 # ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
@@ -2377,6 +2407,9 @@ version = "1.4.1+0"
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
+# ╟─8825772f-ca29-4457-a281-39d53f1794e0
+# ╠═a90b7650-0bd8-4bb2-b509-063ce910d090
+# ╠═14a43458-3962-4ca0-abaf-938db2f32c5a
 # ╟─5d5090ae-8083-40d1-8ac0-38a2f9555733
 # ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
 # ╟─dceda673-041d-49be-82ae-740f329c0ec1
@@ -2385,11 +2418,11 @@ version = "1.4.1+0"
 # ╠═4d40e097-7d0f-43ca-996c-381e88675eca
 # ╠═cdaecc5b-f37f-414c-897b-c646cc8aa7ad
 # ╟─bdd1e568-3770-4931-b283-4841b1916e14
+# ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
 # ╠═c7dd3843-c5e0-4c9b-b226-e8ddc5513a84
-# ╠═97c06931-82dd-43a5-826a-2e3a66f8a707
 # ╠═32c0e73e-4b7e-4dda-92cc-312d0762458c
 # ╠═4ac04dfc-1927-4e5c-be99-2ec883b9e97f
 # ╠═785ca952-ca75-4d18-a51a-15d8898af15b
