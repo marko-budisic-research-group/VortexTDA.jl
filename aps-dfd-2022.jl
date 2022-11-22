@@ -66,7 +66,9 @@ begin
 	clevel = 15
 	panelc = [0.0505 0.0505 0.0505 0.0505]; #panel dimensions in graph between -0.0505 <= x <= 0.0505 and -0.0505 <= y <= 0.0505
 	leftcut = [24 13 10 15]
-end;
+	panelcase = "P$(panel)C$(CaseToFile[caselabel])"
+
+end
 
 # ╔═╡ 1c880145-d1d0-420b-af3f-f6a79d8d8e7c
 
@@ -113,7 +115,6 @@ end;
 
 # ╔═╡ c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 begin
-	panelcase = "P$(panel)C$(CaseToFile[caselabel])"
 	vort_path, sav_path, local_path = alemnis_path(panelcase)
 
 	if !( isdir(vort_path) && isdir(sav_path) )
@@ -151,6 +152,22 @@ Tune the following values:
 - Saving? $(@bind issaving CheckBox(default=false))
 - Extension: $(@bind ext Select(["png","pdf"]))
 """
+
+# ╔═╡ 8a3b3829-8756-44d8-b569-9f0ecc9a63ce
+"""
+Retrieve the coordinate grid, and compute PDs for a particular snapshot
+
+"""
+function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=0.0,pad=0.0)
+	X,Y,vorticity = retrieve_snapshot(snapshot_idx, snapshot_panel)
+	Xx, Yy = pad_grid(X,Y)
+	XY = ndgrid(Yy, Xx)
+	vort = pad_by_value(vorticity, pad, 1)	
+	PH_pos, PH_neg = PHs_of_field(vort, cutoff);
+	return Dict( 
+		[:PHpos, :PHneg, :XY, :vort] .=> [PH_pos, PH_neg, XY, vort] 
+	)
+end
 
 # ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
 """
@@ -451,8 +468,35 @@ Produce traces : $(@bind doDistanceTraces CheckBox(default=false))
 
 # ╔═╡ e2b8fd8b-5415-4ae0-94cc-64286f23813d
 md"""
-Wasserstein distance order $(@bind Wq PlutoUI.Slider(1:2,default=2,show_value=true))
+- Wasserstein distance order $(@bind Wq PlutoUI.Slider(1:2,default=2,show_value=true))
+- Topological cutoff for comparison $(@bind comp_cut PlutoUI.Slider(0:0.01:10, default=1, show_value=true))
 """
+
+# ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
+if doDistanceTraces
+	t = 1:25;
+
+	# extract snapshots
+	@show comp_cut
+	snapshots = snapshot_and_PD.(t, (panel); cutoff=comp_cut);
+
+
+	# retrieve all PHpos for snapshots
+	PHpos = getindex.(snapshots, (:PHpos) )
+	PHneg = getindex.(snapshots, (:PHneg) )
+
+
+	# # some demos - notice that the only thing that changes is the function we are passing as the first argument of pair_op
+
+	# # compute distance function separately along each dimension of PH
+	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein()), PHpos; skip=1 )
+
+	# # compute distance function separately along each dimension of PH,
+	# # then extract time trace of distances along H0
+	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein())[1], PHpos; skip=1 )
+
+end;
+
 
 # ╔═╡ 32fb226a-cbe0-4ca6-b495-66c189238807
 md"""
@@ -474,6 +518,42 @@ Supported dtype = Bottleneck() or Wasserstein()
 """
 distance( PH_A, PH_B; dtype=Wasserstein()) = dtype(PH_A, PH_B; matching=false)
 
+# ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
+if doDistanceTraces
+	# compute compound distance - this is like treating distance as 
+	# a 2-element vector - distance along (H0,H1) - then computing the norm 
+	# of that vector compatible with the PH distance used (inf for Bottleneck, 2 for Wasserstein) -- this is likely what we want to use
+	@show comp_cut
+	dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein(Wq)), 
+		PHpos; skip=1 )
+	dBottlePOS = pair_op( (x,y) -> distance(x,y; dtype=Bottleneck()), 
+		PHpos; skip=1 )
+
+end;
+
+# ╔═╡ 4363a81d-6a48-421d-83fa-096d6f54afc8
+peakdifference = findmax(peakD == "Wasserstein" ? dWassPOS : dBottlePOS)[2]
+
+# ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
+md"""
+### Peak distance and trace comparison
+
+Let's compare neighboring traces:
+- Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],default=peakdifference,show_value=true) )
+"""
+
+# ╔═╡ 12c522ed-788c-43e7-9046-d357fc28a4be
+if doDistanceTraces
+	left = usepeak ? peakdifference : left_trace
+end;
+
+# ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
+if doDistanceTraces
+	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"],linewidth=3, 
+		plot_title = "Pairwise topological distance")
+	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot, linewidth=2)
+end
+
 # ╔═╡ 5535b772-62e5-46ff-972d-945bdea199be
 function distance_time_traces( snapshots, skip=1 )
 	PHpos = getindex.(snapshots, (:PHpos) )
@@ -483,9 +563,9 @@ function distance_time_traces( snapshots, skip=1 )
 
 	out = DataFrame(
 		POS_W = ff(PHpos, Wasserstein(Wq) ),
-		POS_B = ff(PHpos, Bottleneck(Wq) ),
+		POS_B = ff(PHpos, Bottleneck() ),
 		NEG_W = ff(PHneg, Wasserstein(Wq) ),
-		NEG_B = ff(PHneg, Bottleneck(Wq) )
+		NEG_B = ff(PHneg, Bottleneck() )
 	)				 
 
 	return out 
@@ -519,64 +599,13 @@ end
 md"""
 ## Snapshot selection: 
 
-Snapshot: $(@bind j snapshotselectorUI(autoplay))
+- Snapshot: $(@bind j snapshotselectorUI(autoplay))
+- Pad value: $(@bind padding Select([-Inf,0,Inf],default=Inf))
 """
-
-# ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
-"""
-Fetch the X,Y,vorticity from the stored files.
-"""
-function retrieve_snapshot( idx, panel_n )
-	#cd(vort_path)
-	matvars = matread(joinpath( vort_path, readdir(vort_path)[idx] ))
-	vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
-	X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
-	Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
-	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
-end
-
-# ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
-"""
-Pad the field by frame of desired width containing specific value.
-"""
-function pad_by_value(input, value=Inf, n_pixels=1)
-	output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
-	output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
-	return output
-end
-
-# ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
-"""
-Pad X/Y grid by appropriate values 
-"""
-function pad_grid(X,Y)
-	delta_x = (X[3]-X[1])/2 # why not X[2]-X[1]?
-	delta_y = (Y[3]-Y[1])/2
-	Xx = append!([X[1]-delta_x], X, [X[end]+delta_x])
-	Yy = append!([Y[1]-delta_y], Y, [Y[end]+delta_y])
-	return Xx, Yy
-end
-	
-
-# ╔═╡ 8a3b3829-8756-44d8-b569-9f0ecc9a63ce
-"""
-Retrieve the coordinate grid, and compute PDs for a particular snapshot
-
-"""
-function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=cut)
-	X,Y,vorticity = retrieve_snapshot(snapshot_idx, snapshot_panel)
-	Xx, Yy = pad_grid(X,Y)
-	XY = ndgrid(Yy, Xx)
-	vort = pad_by_value(vorticity, Inf, 1)	
-	PH_pos, PH_neg = PHs_of_field(vort, cut);
-	return Dict( 
-		[:PHpos, :PHneg, :XY, :vort] .=> [PH_pos, PH_neg, XY, vort] 
-	)
-end
 
 # ╔═╡ eb15fcab-4261-48ad-88d2-b102a64785f3
 begin
-sshot = snapshot_and_PD(j, panel; cutoff=cut);
+sshot = snapshot_and_PD(j, panel; cutoff=cut,pad=padding);
 PH_pos, PH_neg, XY, vort = (
 	sshot[:PHpos], 
 	sshot[:PHneg], 
@@ -591,18 +620,6 @@ begin
 	plot_handle = display_vorticity(XY,vort,plot_title);
 end;
 
-# ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
-if showH0
-	println("Snapshot $j H0 visualized")
-	neg_reps0 = getH0representativePoint.(PH_neg[1])
-	pos_reps0 = getH0representativePoint.(PH_pos[1])
-
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
-
-	plot_handle
-end
-
 # ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # modifies plot_handle to visualize representatives of positive and negative H1
 if showH1
@@ -612,6 +629,23 @@ if showH1
 	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
 	
 	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	plot_handle
+end
+
+# ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
+plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
+						title=plot_title, persistence= (PDplotStyle == "persistence"),
+						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
+
+# ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
+if showH0
+	println("Snapshot $j H0 visualized")
+	neg_reps0 = getH0representativePoint.(PH_neg[1])
+	pos_reps0 = getH0representativePoint.(PH_pos[1])
+
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
+
 	plot_handle
 end
 
@@ -665,91 +699,63 @@ function plotall( snapshot;
 
 end
 
-# ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
-plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
-						title=plot_title, persistence= (PDplotStyle == "persistence"),
-						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
-
-# ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
-if doDistanceTraces
-	t = 1:25;
-
-	# extract snapshots
-	snapshots = snapshot_and_PD.(t, (panel); cutoff=cut);
-
-
-	# retrieve all PHpos for snapshots
-	PHpos = getindex.(snapshots, (:PHpos) )
-	PHneg = getindex.(snapshots, (:PHneg) )
-
-
-	# # some demos - notice that the only thing that changes is the function we are passing as the first argument of pair_op
-
-	# # compute distance function separately along each dimension of PH
-	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein()), PHpos; skip=1 )
-
-	# # compute distance function separately along each dimension of PH,
-	# # then extract time trace of distances along H0
-	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein())[1], PHpos; skip=1 )
-
-end;
-
-
-# ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
-if doDistanceTraces
-	# compute compound distance - this is like treating distance as 
-	# a 2-element vector - distance along (H0,H1) - then computing the norm 
-	# of that vector compatible with the PH distance used (inf for Bottleneck, 2 for Wasserstein) -- this is likely what we want to use
-	dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein(Wq)), 
-		PHpos; skip=1 )
-	dBottlePOS = pair_op( (x,y) -> distance(x,y; dtype=Bottleneck()), 
-		PHpos; skip=1 )
-
-end
-
-# ╔═╡ 4363a81d-6a48-421d-83fa-096d6f54afc8
-peakdifference = findmax(peakD == "Wasserstein" ? dWassPOS : dBottlePOS)[2]
-
-# ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
-md"""
-### Peak distance and trace comparison
-
-Let's compare neighboring traces:
-- Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],default=peakdifference,show_value=true) )
-"""
-
-# ╔═╡ 12c522ed-788c-43e7-9046-d357fc28a4be
-if doDistanceTraces
-	left = usepeak ? peakdifference : left_trace
-end;
-
-# ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
-if doDistanceTraces
-	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"],linewidth=3, 
-		plot_title = "Panel $(panel) - $(caselabel)")
-	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot, linewidth=2)
-end
-
 # ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
 if doDistanceTraces
 	l = @layout [a; b c; d e]
-	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)",H0 = showH0, H1=showH1 )
-	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)",H0 = showH0, H1=showH1 )
+	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)/$(nsnapshots)",H0 = showH0, H1=showH1 )
+	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)/$(nsnapshots)",H0 = showH0, H1=showH1 )
 	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l,size=(1200,1024),
-		plot_title = "Panel $(panel) - $(caselabel) : snapshots = $(left)-$(left+1)/$(nsnapshots)")
+		plot_title = "Panel $(panel) - $(caselabel) - tcut = $(comp_cut)")
 end
 
 # ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
 if issaving 
-	snapshotfile = "snapshot_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
-	PDfile = "pd_$(caselabel)_$(@sprintf("%02d", j)).$(ext)"
-	compfile = "comp_$(caselabel)_$(@sprintf("%02d", left)).$(ext)"
+	coredesc = "$(caselabel)_$(panelcase)"
+	snapshotfile = "snapshot_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
+	PDfile = "pd_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
+	compfile = "comp_$(coredesc)_$(@sprintf("%02d", left)).$(ext)"
 
 	savefig( plot_handle,joinpath(local_path,snapshotfile)),
 	savefig( plot_PD_handle,joinpath(local_path,PDfile)),
 	savefig( comparison_plot,joinpath(local_path,compfile))
 
 end
+
+# ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
+"""
+Fetch the X,Y,vorticity from the stored files.
+"""
+function retrieve_snapshot( idx, panel_n )
+	#cd(vort_path)
+	matvars = matread(joinpath( vort_path, readdir(vort_path)[idx] ))
+	vorticity = transpose(matvars["Omega_z_PA"][leftcut[panel_n]:end-2,5:end-4])
+	X = matvars["X_Mat"][leftcut[panel_n]:end-2,1] / panelc[panel_n]
+	Y = matvars["Y_Mat"][1,5:end-4] / panelc[panel_n]
+	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
+end
+
+# ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
+"""
+Pad the field by frame of desired width containing specific value.
+"""
+function pad_by_value(input, value=0, n_pixels=1)
+	output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
+	output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
+	return output
+end
+
+# ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
+"""
+Pad X/Y grid by appropriate values 
+"""
+function pad_grid(X,Y)
+	delta_x = (X[3]-X[1])/2 # why not X[2]-X[1]?
+	delta_y = (Y[3]-Y[1])/2
+	Xx = append!([X[1]-delta_x], X, [X[end]+delta_x])
+	Yy = append!([Y[1]-delta_y], Y, [Y[end]+delta_y])
+	return Xx, Yy
+end
+	
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2496,7 +2502,7 @@ version = "1.4.1+0"
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
-# ╠═e2b8fd8b-5415-4ae0-94cc-64286f23813d
+# ╟─e2b8fd8b-5415-4ae0-94cc-64286f23813d
 # ╠═51bcc13d-ea96-4a38-9246-c32f27fb46d7
 # ╠═a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 # ╟─72f30f80-e20a-4b70-af17-967b52daf023
