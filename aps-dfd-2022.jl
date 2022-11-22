@@ -36,6 +36,9 @@ using LazyGrids
 # ╔═╡ fb5d4db3-8952-4572-85d7-dd7cf9a8aa28
 using PlutoUI
 
+# ╔═╡ 536e7a83-28e6-42fd-ba10-7cddefffe934
+using DataFrames
+
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
@@ -136,6 +139,11 @@ begin
 	@show sav_path
 end;
 
+# ╔═╡ 585327c7-63b5-4197-ae66-4c90f09fbb6a
+md"""
+# Retrieve all snapshots and compute their PDs.
+"""
+
 # ╔═╡ 56bd1c69-2d1e-4cd6-9603-7d986512f215
 md"""
 # Visualize a single snapshot
@@ -152,22 +160,6 @@ Tune the following values:
 - Saving? $(@bind issaving CheckBox(default=false))
 - Extension: $(@bind ext Select(["png","pdf"]))
 """
-
-# ╔═╡ 8a3b3829-8756-44d8-b569-9f0ecc9a63ce
-"""
-Retrieve the coordinate grid, and compute PDs for a particular snapshot
-
-"""
-function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=0.0,pad=0.0)
-	X,Y,vorticity = retrieve_snapshot(snapshot_idx, snapshot_panel)
-	Xx, Yy = pad_grid(X,Y)
-	XY = ndgrid(Yy, Xx)
-	vort = pad_by_value(vorticity, pad, 1)	
-	PH_pos, PH_neg = PHs_of_field(vort, cutoff);
-	return Dict( 
-		[:PHpos, :PHneg, :XY, :vort] .=> [PH_pos, PH_neg, XY, vort] 
-	)
-end
 
 # ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
 """
@@ -194,9 +186,8 @@ md"""
 
 # ╔═╡ d08db7ab-f9aa-4052-b67a-63c336a74b0d
 function PHs_of_field( input, cutoff=0)
-	f(v) = ripserer( Cubical(v),
+	return ripserer( Cubical(input),
 		cutoff=cutoff, reps=true, alg=:homology )
-	return f(input), f(-input)
 end
 
 # ╔═╡ 630acaf0-4b21-4ed7-893f-7eaf6ade2403
@@ -472,35 +463,9 @@ md"""
 - Topological cutoff for comparison $(@bind comp_cut PlutoUI.Slider(0:0.01:10, default=1, show_value=true))
 """
 
-# ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
-if doDistanceTraces
-	t = 1:25;
-
-	# extract snapshots
-	@show comp_cut
-	snapshots = snapshot_and_PD.(t, (panel); cutoff=comp_cut);
-
-
-	# retrieve all PHpos for snapshots
-	PHpos = getindex.(snapshots, (:PHpos) )
-	PHneg = getindex.(snapshots, (:PHneg) )
-
-
-	# # some demos - notice that the only thing that changes is the function we are passing as the first argument of pair_op
-
-	# # compute distance function separately along each dimension of PH
-	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein()), PHpos; skip=1 )
-
-	# # compute distance function separately along each dimension of PH,
-	# # then extract time trace of distances along H0
-	# @show pair_op( (x,y) -> distance.(x,y; dtype=Wasserstein())[1], PHpos; skip=1 )
-
-end;
-
-
 # ╔═╡ 32fb226a-cbe0-4ca6-b495-66c189238807
 md"""
-- Use peak $(@bind peakD Select(["Wasserstein","Bottleneck"],default="Wasserstein")) instead? $(@bind usepeak CheckBox(default=true))
+- Use peak $(@bind peakD Select(["Wasserstein","Bottleneck"],default="Wasserstein")) distance instead? $(@bind usepeak CheckBox(default=true))
 """
 
 # ╔═╡ 823da704-1281-428a-9c30-f70807bf56bf
@@ -518,59 +483,26 @@ Supported dtype = Bottleneck() or Wasserstein()
 """
 distance( PH_A, PH_B; dtype=Wasserstein()) = dtype(PH_A, PH_B; matching=false)
 
-# ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
-if doDistanceTraces
-	# compute compound distance - this is like treating distance as 
-	# a 2-element vector - distance along (H0,H1) - then computing the norm 
-	# of that vector compatible with the PH distance used (inf for Bottleneck, 2 for Wasserstein) -- this is likely what we want to use
-	@show comp_cut
-	dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein(Wq)), 
-		PHpos; skip=1 )
-	dBottlePOS = pair_op( (x,y) -> distance(x,y; dtype=Bottleneck()), 
-		PHpos; skip=1 )
-
-end;
-
-# ╔═╡ 4363a81d-6a48-421d-83fa-096d6f54afc8
-peakdifference = findmax(peakD == "Wasserstein" ? dWassPOS : dBottlePOS)[2]
-
-# ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
-md"""
-### Peak distance and trace comparison
-
-Let's compare neighboring traces:
-- Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],default=peakdifference,show_value=true) )
-"""
-
-# ╔═╡ 12c522ed-788c-43e7-9046-d357fc28a4be
-if doDistanceTraces
-	left = usepeak ? peakdifference : left_trace
-end;
-
-# ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
-if doDistanceTraces
-	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"],linewidth=3, 
-		plot_title = "Pairwise topological distance")
-	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot, linewidth=2)
-end
-
 # ╔═╡ 5535b772-62e5-46ff-972d-945bdea199be
-function distance_time_traces( snapshots, skip=1 )
+function distance_time_traces( tt, snapshots, skip=1 )
 	PHpos = getindex.(snapshots, (:PHpos) )
 	PHneg = getindex.(snapshots, (:PHneg) )
 
 	ff(ss, dd) = pair_op( (x,y) -> distance(x,y; dtype=dd), ss; skip=skip )
 
 	out = DataFrame(
+		t = collect( tt[1:end-1] ),
 		POS_W = ff(PHpos, Wasserstein(Wq) ),
 		POS_B = ff(PHpos, Bottleneck() ),
 		NEG_W = ff(PHneg, Wasserstein(Wq) ),
 		NEG_B = ff(PHneg, Bottleneck() )
-	)				 
+	)
+	out[!, "W"] = (out.POS_W .^ Wq + out.NEG_W .^ Wq ) .^ (1/Wq)
+	out[!, "B"] = max.(out.POS_B, out.NEG_B )
 
 	return out 
 
-end
+end;
 
 # ╔═╡ 5d5090ae-8083-40d1-8ac0-38a2f9555733
 md"""
@@ -602,124 +534,6 @@ md"""
 - Snapshot: $(@bind j snapshotselectorUI(autoplay))
 - Pad value: $(@bind padding Select([-Inf,0,Inf],default=Inf))
 """
-
-# ╔═╡ eb15fcab-4261-48ad-88d2-b102a64785f3
-begin
-sshot = snapshot_and_PD(j, panel; cutoff=cut,pad=padding);
-PH_pos, PH_neg, XY, vort = (
-	sshot[:PHpos], 
-	sshot[:PHneg], 
-	sshot[:XY],
-	sshot[:vort]
-) # extract the outputs into individual variables, for simplicity
-end
-
-# ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
-begin
-	plot_title = "Panel $(panel) - $(caselabel): snapshot = $(j)/$(nsnapshots)"
-	plot_handle = display_vorticity(XY,vort,plot_title);
-end;
-
-# ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
-# modifies plot_handle to visualize representatives of positive and negative H1
-if showH1
-	neg_reps1 = getH1representativeVector.(PH_neg[2])
-	pos_reps1 = getH1representativeVector.(PH_pos[2])
-
-	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
-	
-	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
-	plot_handle
-end
-
-# ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
-plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
-						title=plot_title, persistence= (PDplotStyle == "persistence"),
-						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
-
-# ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
-if showH0
-	println("Snapshot $j H0 visualized")
-	neg_reps0 = getH0representativePoint.(PH_neg[1])
-	pos_reps0 = getH0representativePoint.(PH_pos[1])
-
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
-
-	plot_handle
-end
-
-# ╔═╡ 4224e4f8-6613-42b5-8ad5-23278f4caa21
-begin
-	if showH0; neg_reps0; end # this is here simply to redisplay the image after checkbox changes
-	if showH1; neg_reps1; end # this is here simply to redisplay the image after checkbox changes
-	plot_handle
-end
-
-
-# ╔═╡ 9714864a-1172-4331-8d70-a92baf41b950
-"""
-Plot everything one needs for a snapshot.
-"""
-function plotall( snapshot;
-	plot_title = "Panel $(panel) - $(caselabel) : snapshot = $(j)/$(nsnapshots)",
-	H0 = showH0, H1=showH1 )
-
-	#### PLOTTING REPRESENTATIVES
-	PH_neg = snapshot[:PHneg]
-	PH_pos = snapshot[:PHpos]
-
-	# background - 
-	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort],plot_title);
-
-	if H0
-	neg_reps0 = getH0representativePoint.(PH_neg[1])
-	pos_reps0 = getH0representativePoint.(PH_pos[1])
-
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:green)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:magenta)
-	end
-
-	if H1
-	neg_reps1 = getH1representativeVector.(PH_neg[2])
-	pos_reps1 = getH1representativeVector.(PH_pos[2])
-
-	
-	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
-	
-	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:green,linewidth=2)
-	end
-
-
-	### PLOTTING PD
-	pd_handle = plotPDs( PH_pos, PH_neg; xlims=(-50,50),ylims=(-50,50),
-	persistence= (PDplotStyle == "persistence"))
-
-	return plot_handle, pd_handle
-
-end
-
-# ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
-if doDistanceTraces
-	l = @layout [a; b c; d e]
-	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)/$(nsnapshots)",H0 = showH0, H1=showH1 )
-	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)/$(nsnapshots)",H0 = showH0, H1=showH1 )
-	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l,size=(1200,1024),
-		plot_title = "Panel $(panel) - $(caselabel) - tcut = $(comp_cut)")
-end
-
-# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
-if issaving 
-	coredesc = "$(caselabel)_$(panelcase)"
-	snapshotfile = "snapshot_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
-	PDfile = "pd_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
-	compfile = "comp_$(coredesc)_$(@sprintf("%02d", left)).$(ext)"
-
-	savefig( plot_handle,joinpath(local_path,snapshotfile)),
-	savefig( plot_PD_handle,joinpath(local_path,PDfile)),
-	savefig( comparison_plot,joinpath(local_path,compfile))
-
-end
 
 # ╔═╡ fed78c33-26a7-4400-854f-381be309fb0d
 """
@@ -757,9 +571,197 @@ function pad_grid(X,Y)
 end
 	
 
+# ╔═╡ 8a3b3829-8756-44d8-b569-9f0ecc9a63ce
+"""
+Retrieve the coordinate grid, and compute PDs for a particular snapshot
+
+"""
+function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=0.0,pad=Inf)
+	X,Y,vorticity = retrieve_snapshot(snapshot_idx, snapshot_panel)
+	Xx, Yy = pad_grid(X,Y)
+	XY = ndgrid(Yy, Xx)
+	vort_pos = pad_by_value(vorticity, pad, 1)	
+	vort_neg = pad_by_value(-vorticity, pad, 1)		
+	vort_0 = pad_by_value(vorticity, 0, 1)			
+	PH_pos, PH_neg = PHs_of_field.( (vort_pos, vort_neg), cutoff);
+	return Dict( 
+		[:PHpos, :PHneg, :XY, :vort_pos, :vort_neg, :vort_0] .=> 
+		[PH_pos, PH_neg, XY, vort_pos, vort_neg, vort_0] 
+	)
+end
+
+# ╔═╡ f4fe357b-15f4-46b6-8777-89fda5179603
+begin
+	t = 1:nsnapshots;
+	
+	# extract snapshots
+	snapshots = snapshot_and_PD.(t, (panel); cutoff=comp_cut, pad=padding);
+
+end;
+
+# ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
+if doDistanceTraces
+	# retrieve all PHpos for snapshots
+	PHpos = getindex.(snapshots, (:PHpos) )
+	PHneg = getindex.(snapshots, (:PHneg) )
+end;
+
+# ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
+snapshots_pair_distances = distance_time_traces(t,snapshots);
+
+# ╔═╡ 4363a81d-6a48-421d-83fa-096d6f54afc8
+if doDistanceTraces
+	peakdifference = findmax(peakD == "Wasserstein" ? 
+	snapshots_pair_distances.W : 
+	snapshots_pair_distances.B)[2]
+end
+
+# ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
+md"""
+### Peak distance and trace comparison
+
+Let's compare neighboring traces:
+- Left = $(@bind left_trace PlutoUI.Slider(1:nsnapshots-1,default=peakdifference,show_value=true) )
+"""
+
+# ╔═╡ 12c522ed-788c-43e7-9046-d357fc28a4be
+if doDistanceTraces
+	left = usepeak ? peakdifference : left_trace
+end;
+
+# ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
+if doDistanceTraces
+	ptrace = plot( Matrix( snapshots_pair_distances[:,2:end] ),
+		labels=permutedims(names(snapshots_pair_distances[:,2:end])),
+		color=[:red :orange :blue :green :purple :brown ],
+		linewidth=[2 2 2 2 4 4],
+		plot_title = "Pairwise topological distance")
+	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot, linewidth=2,color=:black)
+end
+
+# ╔═╡ eb15fcab-4261-48ad-88d2-b102a64785f3
+begin
+sshot = snapshot_and_PD(j, panel; cutoff=cut,pad=padding);
+PH_pos, PH_neg, XY, vort_0 = (
+	sshot[:PHpos], 
+	sshot[:PHneg], 
+	sshot[:XY],
+	sshot[:vort_0]
+) # extract the outputs into individual variables, for simplicity
+end
+
+# ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
+begin
+	plot_title = "Panel $(panel) - $(caselabel): snapshot = $(j)/$(nsnapshots)"
+	plot_handle = display_vorticity(XY,vort_0,plot_title);
+end;
+
+# ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
+if showH0
+	println("Snapshot $j H0 visualized")
+	neg_reps0 = getH0representativePoint.(PH_neg[1])
+	pos_reps0 = getH0representativePoint.(PH_pos[1])
+
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
+
+	plot_handle
+end
+
+# ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
+# modifies plot_handle to visualize representatives of positive and negative H1
+if showH1
+	neg_reps1 = getH1representativeVector.(PH_neg[2])
+	pos_reps1 = getH1representativeVector.(PH_pos[2])
+
+	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+	
+	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	plot_handle
+end
+
+# ╔═╡ 9714864a-1172-4331-8d70-a92baf41b950
+"""
+Plot everything one needs for a snapshot.
+"""
+function plotall( snapshot;
+	plot_title = "Panel $(panel) - $(caselabel) : snapshot = $(j)/$(nsnapshots)",
+	H0 = showH0, H1=showH1 )
+
+	#### PLOTTING REPRESENTATIVES
+	PH_neg = snapshot[:PHneg]
+	PH_pos = snapshot[:PHpos]
+
+	# background - 
+	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title);
+
+	if H0
+	neg_reps0 = getH0representativePoint.(PH_neg[1])
+	pos_reps0 = getH0representativePoint.(PH_pos[1])
+
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:green)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:magenta)
+	end
+
+	if H1
+	neg_reps1 = getH1representativeVector.(PH_neg[2])
+	pos_reps1 = getH1representativeVector.(PH_pos[2])
+
+	
+	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	
+	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+	end
+
+
+	### PLOTTING PD
+	pd_handle = plotPDs( PH_pos, PH_neg; xlims=(-50,50),ylims=(-50,50),
+	persistence= (PDplotStyle == "persistence"))
+
+	return plot_handle, pd_handle
+
+end
+
+# ╔═╡ 4224e4f8-6613-42b5-8ad5-23278f4caa21
+begin
+	field, PD = plotall( snapshots[j];
+	plot_title = "Panel $(panel) - $(caselabel) : snapshot = $(j)/$(nsnapshots)",
+	H0 = showH0, H1=showH1 )
+	plot(field, PD, layout=@layout [a;b] )
+end
+
+
+# ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
+if doDistanceTraces
+	l = @layout [a; b c; d e]
+	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)/$(nsnapshots)",H0 = showH0, H1=showH1 )
+	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)/$(nsnapshots)",H0 = showH0, H1=showH1 )
+	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l,size=(1200,1024),
+		plot_title = "Panel $(panel) - $(caselabel) - tcut = $(comp_cut)")
+end
+
+# ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
+plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
+						title=plot_title, persistence= (PDplotStyle == "persistence"),
+						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
+
+# ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
+if issaving 
+	coredesc = "$(caselabel)_$(panelcase)"
+	snapshotfile = "snapshot_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
+	PDfile = "pd_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
+	compfile = "comp_$(coredesc)_$(@sprintf("%02d", left)).$(ext)"
+
+	savefig( plot_handle,joinpath(local_path,snapshotfile)),
+	savefig( plot_PD_handle,joinpath(local_path,PDfile)),
+	savefig( comparison_plot,joinpath(local_path,compfile))
+
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
@@ -775,6 +777,7 @@ Ripserer = "aa79e827-bd0b-42a8-9f10-2b302677a641"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 
 [compat]
+DataFrames = "~1.4.2"
 Distances = "~0.10.7"
 Images = "~0.25.2"
 JLD2 = "~0.4.25"
@@ -794,7 +797,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "458eae689b95bb59c869b640e042528e9672d89e"
+project_hash = "008d299fc1b04c06488b37fec059e18a79fb3f2d"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -988,6 +991,12 @@ version = "1.0.2"
 git-tree-sha1 = "46d2680e618f8abd007bce0c3026cb0c4a8f2032"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.12.0"
+
+[[deps.DataFrames]]
+deps = ["Compat", "DataAPI", "Future", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SnoopPrecompile", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "5b93f1b47eec9b7194814e40542752418546679f"
+uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+version = "1.4.2"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -1395,6 +1404,11 @@ deps = ["Test"]
 git-tree-sha1 = "49510dfcb407e572524ba94aeae2fced1f3feb0f"
 uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.8"
+
+[[deps.InvertedIndices]]
+git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
+uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
+version = "1.1.0"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
@@ -1836,6 +1850,12 @@ deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNu
 git-tree-sha1 = "efc140104e6d0ae3e7e30d56c98c4a927154d684"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.48"
+
+[[deps.PooledArrays]]
+deps = ["DataAPI", "Future"]
+git-tree-sha1 = "a6062fe4063cdafe78f4a0a81cfffb89721b30e7"
+uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
+version = "1.4.2"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -2467,6 +2487,8 @@ version = "1.4.1+0"
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
 # ╠═4abde889-f80d-431c-9a78-4a53d70f4727
 # ╠═21eb85dc-e4d8-4fde-b363-2e604d419cd2
+# ╟─585327c7-63b5-4197-ae66-4c90f09fbb6a
+# ╠═f4fe357b-15f4-46b6-8777-89fda5179603
 # ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
 # ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
 # ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
@@ -2510,6 +2532,7 @@ version = "1.4.1+0"
 # ╠═4363a81d-6a48-421d-83fa-096d6f54afc8
 # ╠═12c522ed-788c-43e7-9046-d357fc28a4be
 # ╠═84285ce0-9f49-4f75-be84-2125a35b5e75
+# ╠═536e7a83-28e6-42fd-ba10-7cddefffe934
 # ╠═5535b772-62e5-46ff-972d-945bdea199be
 # ╠═823da704-1281-428a-9c30-f70807bf56bf
 # ╠═14a43458-3962-4ca0-abaf-938db2f32c5a
