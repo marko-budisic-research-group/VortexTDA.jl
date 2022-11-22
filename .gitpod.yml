@@ -1,0 +1,19 @@
+
+image:
+  file: .gitpod.Dockerfile
+tasks:
+- init: julia --project=. -e "using Pkg; Pkg.instantiate(); Pkg.precompile()"
+- command: julia --version
+
+# List the ports to expose. Learn more https://www.gitpod.io/docs/config-ports/
+ports:
+  - port: 3000
+    onOpen: open-preview
+
+vscode:
+  extensions:
+    - ms-azuretools.vscode-docker
+    - julialang.language-julia
+    - ms-toolsai.jupyter
+    - ms-toolsai.jupyter-renderers
+    - ms-toolsai.jupyter-keymap    
