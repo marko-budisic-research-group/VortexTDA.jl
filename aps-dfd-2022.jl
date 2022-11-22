@@ -451,6 +451,11 @@ md"""
 Wasserstein distance order $(@bind Wq PlutoUI.Slider(1:2,default=2,show_value=true))
 """
 
+# ╔═╡ 32fb226a-cbe0-4ca6-b495-66c189238807
+md"""
+- Use peak $(@bind peakD Select(["Wasserstein","Bottleneck"],default="Wasserstein")) instead? $(@bind usepeak CheckBox(default=true))
+"""
+
 # ╔═╡ 823da704-1281-428a-9c30-f70807bf56bf
 """
 	pair_op computes a pair operation (e.g. a distance) between skip-separated elements of the vector, by sliding the skip window along it
@@ -699,19 +704,19 @@ if doDistanceTraces
 
 end
 
+# ╔═╡ 4363a81d-6a48-421d-83fa-096d6f54afc8
+peakdifference = findmax(peakD == "Wasserstein" ? dWassPOS : dBottlePOS)[2]
+
 # ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
 md"""
 ### Peak distance and trace comparison
 
 Let's compare neighboring traces:
-- Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],show_value=true) )
-- Use peak $(@bind peakD Select(["Wasserstein","Bottleneck"],default="Wasserstein")) instead? $(@bind usepeak CheckBox(default=true))
-
+- Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],default=peakdifference,show_value=true) )
 """
 
 # ╔═╡ 12c522ed-788c-43e7-9046-d357fc28a4be
 if doDistanceTraces
-	peakdifference = findmax(peakD == "Wasserstein" ? dWassPOS : dBottlePOS)[2]
 	left = usepeak ? peakdifference : left_trace
 end;
 
@@ -2492,6 +2497,8 @@ version = "1.4.1+0"
 # ╠═51bcc13d-ea96-4a38-9246-c32f27fb46d7
 # ╠═a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 # ╟─72f30f80-e20a-4b70-af17-967b52daf023
+# ╟─32fb226a-cbe0-4ca6-b495-66c189238807
+# ╠═4363a81d-6a48-421d-83fa-096d6f54afc8
 # ╠═12c522ed-788c-43e7-9046-d357fc28a4be
 # ╠═84285ce0-9f49-4f75-be84-2125a35b5e75
 # ╠═5535b772-62e5-46ff-972d-945bdea199be
