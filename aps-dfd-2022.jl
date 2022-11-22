@@ -500,6 +500,14 @@ function distance_time_traces( tt, snapshots, skip=1 )
 	out[!, "W"] = (out.POS_W .^ Wq + out.NEG_W .^ Wq ) .^ (1/Wq)
 	out[!, "B"] = max.(out.POS_B, out.NEG_B )
 
+	colmetadata!(out,:t, "label","Timestep", style=:note)
+	colmetadata!(out,:POS_W, "label","Subl. Wass.-$(Wq)", style=:note)
+	colmetadata!(out,:NEG_W, "label","Superl. Wass.-$(Wq)", style=:note)
+	colmetadata!(out,:W, "label","Total Wass.-$(Wq)", style=:note)
+	colmetadata!(out,:POS_B, "label","Subl. Bottlen.", style=:note)
+	colmetadata!(out,:NEG_B, "label","Superl. Bottlen.", style=:note)
+	colmetadata!(out,:B, "label","Total Bottlen.", style=:note)
+	
 	return out 
 
 end;
@@ -614,7 +622,7 @@ if doDistanceTraces
 	peakdifference = findmax(peakD == "Wasserstein" ? 
 	snapshots_pair_distances.W : 
 	snapshots_pair_distances.B)[2]
-end
+end;
 
 # ╔═╡ 72f30f80-e20a-4b70-af17-967b52daf023
 md"""
@@ -632,7 +640,10 @@ end;
 # ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 if doDistanceTraces
 	ptrace = plot( Matrix( snapshots_pair_distances[:,2:end] ),
-		labels=permutedims(names(snapshots_pair_distances[:,2:end])),
+		labels=permutedims(
+			colmetadata.( (snapshots_pair_distances,), 
+				names(snapshots_pair_distances)[2:end], ("label",) 
+		)		),
 		color=[:red :orange :blue :green :purple :brown ],
 		linewidth=[2 2 2 2 4 4],
 		plot_title = "Pairwise topological distance")
@@ -648,7 +659,7 @@ PH_pos, PH_neg, XY, vort_0 = (
 	sshot[:XY],
 	sshot[:vort_0]
 ) # extract the outputs into individual variables, for simplicity
-end
+end;
 
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
