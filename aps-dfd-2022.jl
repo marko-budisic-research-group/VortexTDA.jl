@@ -377,9 +377,6 @@ md"""
 ## PlotAll
 """
 
-# ╔═╡ d47a9875-1ff0-4cfb-92b2-479489e23d68
-
-
 # ╔═╡ 116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 md"""
 # Plot Persistence Diagram
@@ -429,11 +426,11 @@ TODO At this point, it's not clear to me (=Marko) what should be the default
 function plotPDs( PD_pos, PD_neg; 
 				  neg_swap_axes=false, neg_flip_sign=true, kwargs... )
 
-	P = plot(PD_pos;
+	P = plot(PD_pos; markersize=7,
 	seriescolor=[:blue, :green], label =["Subl. H0" "Subl. H1"], kwargs...)
 	
 	plot!(P, flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
-			seriescolor=[:red, :orange], 
+			seriescolor=[:red, :orange], marker=:d, markersize=7,
 			label =["Superl. H0" "Superl. H1"], 
 			kwargs... )
 	return P
@@ -717,8 +714,8 @@ end;
 
 # ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 if doDistanceTraces
-	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"])
-	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot)
+	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"],linewidth=3)
+	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot, linewidth=2)
 end
 
 # ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
@@ -2478,7 +2475,6 @@ version = "1.4.1+0"
 # ╠═2b83a288-4ccc-4545-b964-5b43e964d321
 # ╟─d3a963e8-9508-4a93-8c49-5013af4c9ff1
 # ╠═9714864a-1172-4331-8d70-a92baf41b950
-# ╠═d47a9875-1ff0-4cfb-92b2-479489e23d68
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
