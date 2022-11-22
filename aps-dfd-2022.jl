@@ -377,6 +377,9 @@ md"""
 ## PlotAll
 """
 
+# ╔═╡ d47a9875-1ff0-4cfb-92b2-479489e23d68
+
+
 # ╔═╡ 116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 md"""
 # Plot Persistence Diagram
@@ -446,6 +449,11 @@ md"""
 Produce traces : $(@bind doDistanceTraces CheckBox(default=false))
 """
 
+# ╔═╡ e2b8fd8b-5415-4ae0-94cc-64286f23813d
+md"""
+Wasserstein distance order $(@bind Wq PlutoUI.Slider(1:2,default=2,show_value=true))
+"""
+
 # ╔═╡ 823da704-1281-428a-9c30-f70807bf56bf
 """
 	pair_op computes a pair operation (e.g. a distance) between skip-separated elements of the vector, by sliding the skip window along it
@@ -459,12 +467,7 @@ end
 Compute the distance dtype between two persistent diagrams.
 Supported dtype = Bottleneck() or Wasserstein()
 """
-function distance( PH_A, PH_B; dtype=Wasserstein())
-
-
-	distances = dtype(PH_A, PH_B; matching=false)
-
-end
+distance( PH_A, PH_B; dtype=Wasserstein()) = dtype(PH_A, PH_B; matching=false)
 
 # ╔═╡ 5535b772-62e5-46ff-972d-945bdea199be
 function distance_time_traces( snapshots, skip=1 )
@@ -474,10 +477,10 @@ function distance_time_traces( snapshots, skip=1 )
 	ff(ss, dd) = pair_op( (x,y) -> distance(x,y; dtype=dd), ss; skip=skip )
 
 	out = DataFrame(
-		POS_W = ff(PHpos, Wasserstein() ),
-		POS_B = ff(PHpos, Bottleneck() ),
-		NEG_W = ff(PHneg, Wasserstein() ),
-		NEG_B = ff(PHneg, Bottleneck() )
+		POS_W = ff(PHpos, Wasserstein(Wq) ),
+		POS_B = ff(PHpos, Bottleneck(Wq) ),
+		NEG_W = ff(PHneg, Wasserstein(Wq) ),
+		NEG_B = ff(PHneg, Bottleneck(Wq) )
 	)				 
 
 	return out 
@@ -621,8 +624,7 @@ Plot everything one needs for a snapshot.
 """
 function plotall( snapshot;
 	plot_title = "$(caselabel) : snapshot = $(j)/$(nsnapshots)",
-	H0 = showH0, H1=showH1, update=plotH1representativeVector!
- )
+	H0 = showH0, H1=showH1 )
 
 	#### PLOTTING REPRESENTATIVES
 	PH_neg = snapshot[:PHneg]
@@ -644,9 +646,9 @@ function plotall( snapshot;
 	pos_reps1 = getH1representativeVector.(PH_pos[2])
 
 	
-	update.(pos_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
 	
-	update.(neg_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:green,linewidth=2)
 	end
 
 
@@ -687,15 +689,12 @@ if doDistanceTraces
 end;
 
 
-# ╔═╡ efa9c0e4-9216-49c3-ba64-232aab6eee8b
-plotall( snapshots[1], update=plotH1representativeVector2! )[1]
-
 # ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
 if doDistanceTraces
 	# compute compound distance - this is like treating distance as 
 	# a 2-element vector - distance along (H0,H1) - then computing the norm 
 	# of that vector compatible with the PH distance used (inf for Bottleneck, 2 for Wasserstein) -- this is likely what we want to use
-	dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein()), 
+	dWassPOS = pair_op( (x,y) -> distance(x,y; dtype=Wasserstein(Wq)), 
 		PHpos; skip=1 )
 	dBottlePOS = pair_op( (x,y) -> distance(x,y; dtype=Bottleneck()), 
 		PHpos; skip=1 )
@@ -720,7 +719,7 @@ end;
 
 # ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 if doDistanceTraces
-	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was";; "PHpos Bot"])
+	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"])
 	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot)
 end
 
@@ -2479,9 +2478,9 @@ version = "1.4.1+0"
 # ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 # ╠═2b83a288-4ccc-4545-b964-5b43e964d321
-# ╠═efa9c0e4-9216-49c3-ba64-232aab6eee8b
 # ╟─d3a963e8-9508-4a93-8c49-5013af4c9ff1
 # ╠═9714864a-1172-4331-8d70-a92baf41b950
+# ╠═d47a9875-1ff0-4cfb-92b2-479489e23d68
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
@@ -2490,6 +2489,7 @@ version = "1.4.1+0"
 # ╠═47e44a3e-68be-412c-98ab-beb02b105159
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
+# ╠═e2b8fd8b-5415-4ae0-94cc-64286f23813d
 # ╠═51bcc13d-ea96-4a38-9246-c32f27fb46d7
 # ╠═a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 # ╟─72f30f80-e20a-4b70-af17-967b52daf023
