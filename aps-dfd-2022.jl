@@ -39,6 +39,9 @@ using PlutoUI
 # ╔═╡ 536e7a83-28e6-42fd-ba10-7cddefffe934
 using DataFrames
 
+# ╔═╡ bc721191-7225-43c9-837d-bb463ef98147
+using XLSX
+
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
@@ -760,12 +763,15 @@ plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
 if issaving 
 	coredesc = "$(caselabel)_$(panelcase)"
 	snapshotfile = "snapshot_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
+	xlsfile = "$(coredesc)_distances.xlsx"
 	PDfile = "pd_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
 	compfile = "comp_$(coredesc)_$(@sprintf("%02d", left)).$(ext)"
 
 	savefig( plot_handle,joinpath(local_path,snapshotfile)),
 	savefig( plot_PD_handle,joinpath(local_path,PDfile)),
 	savefig( comparison_plot,joinpath(local_path,compfile))
+
+	XLSX.writetable(joinpath(local_path,xlsfile), snapshots_pair_distances, overwrite=true)
 
 end
 
@@ -786,6 +792,7 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Ripserer = "aa79e827-bd0b-42a8-9f10-2b302677a641"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
+XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 
 [compat]
 DataFrames = "~1.4.2"
@@ -800,6 +807,7 @@ Plots = "~1.35.3"
 PlutoUI = "~0.7.44"
 Ripserer = "~0.16.11"
 TestImages = "~1.7.0"
+XLSX = "~0.8.4"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -808,7 +816,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "008d299fc1b04c06488b37fec059e18a79fb3f2d"
+project_hash = "9b1a46426c649d0129966a165aa111b4af8bc719"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -1072,6 +1080,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "bad72f730e9e91c08d9427d5e8db95478a3c323d"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
 version = "2.4.8+0"
+
+[[deps.EzXML]]
+deps = ["Printf", "XML2_jll"]
+git-tree-sha1 = "0fa3b52a04a4e210aeb1626def9c90df3ae65268"
+uuid = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+version = "1.1.0"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -2257,6 +2271,12 @@ git-tree-sha1 = "de67fa59e33ad156a590055375a30b23c40299d3"
 uuid = "efce3f68-66dc-5838-9240-27a6d6f5f9b6"
 version = "0.5.5"
 
+[[deps.XLSX]]
+deps = ["Artifacts", "Dates", "EzXML", "Printf", "Tables", "ZipFile"]
+git-tree-sha1 = "ccd1adf7d0b22f762e1058a8d73677e7bd2a7274"
+uuid = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
+version = "0.8.4"
+
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "58443b63fb7e465a8a7210828c91c08b92132dff"
@@ -2394,6 +2414,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "79c31e7844f6ecf779705fbc12146eb190b7d845"
 uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
 version = "1.4.0+3"
+
+[[deps.ZipFile]]
+deps = ["Libdl", "Printf", "Zlib_jll"]
+git-tree-sha1 = "ef4f23ffde3ee95114b461dc667ea4e6906874b2"
+uuid = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+version = "0.10.0"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
@@ -2548,6 +2574,7 @@ version = "1.4.1+0"
 # ╠═823da704-1281-428a-9c30-f70807bf56bf
 # ╠═14a43458-3962-4ca0-abaf-938db2f32c5a
 # ╟─5d5090ae-8083-40d1-8ac0-38a2f9555733
+# ╠═bc721191-7225-43c9-837d-bb463ef98147
 # ╠═7f5c642e-ebf2-4992-84f6-cfe169913fe4
 # ╟─bdd1e568-3770-4931-b283-4841b1916e14
 # ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
