@@ -395,6 +395,8 @@ It's not clear to me which one we should use, so I left it as option-driven so w
 md"""
  Swap axes $(@bind axswap CheckBox(default=false))
  Flip sign $(@bind sgnflip CheckBox(default=true))
+ Plot style $(@bind PDplotStyle Select(
+			 ["persistence", "death"],default="death"))
 """
 
 # ╔═╡ 3f12b14b-ffd2-47e7-a480-52e0be81a157
@@ -435,11 +437,6 @@ function plotPDs( PD_pos, PD_neg;
 			label =["Superl. H0" "Superl. H1"], 
 			kwargs... )
 	return P
-end
-
-# ╔═╡ 47e44a3e-68be-412c-98ab-beb02b105159
-begin
-	@show a = ["m","n"][ BitArray([true,false])]
 end
 
 # ╔═╡ 8825772f-ca29-4457-a281-39d53f1794e0
@@ -653,7 +650,8 @@ function plotall( snapshot;
 
 
 	### PLOTTING PD
-	pd_handle = plotPDs( PH_pos, PH_neg; xlims=(-50,50),ylims=(-50,50) )
+	pd_handle = plotPDs( PH_pos, PH_neg; xlims=(-50,50),ylims=(-50,50),
+	persistence= (PDplotStyle == "persistence"))
 
 	return plot_handle, pd_handle
 
@@ -661,7 +659,7 @@ end
 
 # ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
 plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
-						title=plot_title,
+						title=plot_title, persistence= (PDplotStyle == "persistence"),
 						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
 
 # ╔═╡ 54d9b89f-f4a2-4508-b590-48bda81e6036
@@ -2486,7 +2484,6 @@ version = "1.4.1+0"
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
-# ╠═47e44a3e-68be-412c-98ab-beb02b105159
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
 # ╠═e2b8fd8b-5415-4ae0-94cc-64286f23813d
