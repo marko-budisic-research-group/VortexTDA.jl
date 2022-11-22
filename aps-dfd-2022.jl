@@ -389,6 +389,9 @@ Flipping the axes in PD is implemented by creating a deep copy of `PersistenceDi
 Then a plotting function simply invokes the usual PD plotter on each of them, and changes their labels/axes so that it's disambiguated.
 
 It's not clear to me which one we should use, so I left it as option-driven so we can try things out. We probably need to check on some imaginary function what should work.
+
+I think when plotting "persistence" on y axis, we want "Swap axes" but not "Flip sign".
+When plotting "death" on y axis, we want "Flip sign" on, but "Swap axes" off?
 """
 
 # ╔═╡ 9c867fb4-f2a4-481d-add0-5230b220e14e
