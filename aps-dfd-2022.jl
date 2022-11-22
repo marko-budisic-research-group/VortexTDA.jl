@@ -53,11 +53,11 @@ md"""
 ## Panel parameters
 
   - Plate motion $(@bind caselabel Select([:Heaving,:Pitching,:HeavingAndPitching]))
+  - Panel $(@bind panel PlutoUI.Slider(1:4,default=1, show_value=true))
 """
 
 # ╔═╡ 523b6671-00c3-45c8-92ba-f8540829dcd7
 begin
-	panel = 1
 	CaseToFile = Dict( 
 		:Heaving => 1,
 		:Pitching => 2,
@@ -67,6 +67,9 @@ begin
 	panelc = [0.0505 0.0505 0.0505 0.0505]; #panel dimensions in graph between -0.0505 <= x <= 0.0505 and -0.0505 <= y <= 0.0505
 	leftcut = [24 13 10 15]
 end;
+
+# ╔═╡ 1c880145-d1d0-420b-af3f-f6a79d8d8e7c
+
 
 # ╔═╡ fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
 md"""
@@ -576,7 +579,7 @@ end
 
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
-	plot_title = "$(caselabel) : snapshot = $(j)/$(nsnapshots)"
+	plot_title = "Panel $(panel) - $(caselabel): snapshot = $(j)/$(nsnapshots)"
 	plot_handle = display_vorticity(XY,vort,plot_title);
 end;
 
@@ -617,7 +620,7 @@ end
 Plot everything one needs for a snapshot.
 """
 function plotall( snapshot;
-	plot_title = "$(caselabel) : snapshot = $(j)/$(nsnapshots)",
+	plot_title = "Panel $(panel) - $(caselabel) : snapshot = $(j)/$(nsnapshots)",
 	H0 = showH0, H1=showH1 )
 
 	#### PLOTTING REPRESENTATIVES
@@ -702,19 +705,20 @@ md"""
 
 Let's compare neighboring traces:
 - Left = $(@bind left_trace PlutoUI.Slider(t[1:end-1],show_value=true) )
-- Use peak Wasserstein instead? $(@bind usepeak CheckBox(default=true))
+- Use peak $(@bind peakD Select(["Wasserstein","Bottleneck"],default="Wasserstein")) instead? $(@bind usepeak CheckBox(default=true))
 
 """
 
 # ╔═╡ 12c522ed-788c-43e7-9046-d357fc28a4be
 if doDistanceTraces
-	peakdifference = findmax(dWassPOS)[2]
+	peakdifference = findmax(peakD == "Wasserstein" ? dWassPOS : dBottlePOS)[2]
 	left = usepeak ? peakdifference : left_trace
 end;
 
 # ╔═╡ a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 if doDistanceTraces
-	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"],linewidth=3)
+	ptrace = plot([dWassPOS,dBottlePOS],label=["PHpos Was-$(Wq)";; "PHpos Bot"],linewidth=3, 
+		plot_title = "Panel $(panel) - $(caselabel)")
 	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot, linewidth=2)
 end
 
@@ -723,7 +727,8 @@ if doDistanceTraces
 	l = @layout [a; b c; d e]
 	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)",H0 = showH0, H1=showH1 )
 	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)",H0 = showH0, H1=showH1 )
-	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l,size=(1200,1024))
+	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l,size=(1200,1024),
+		plot_title = "Panel $(panel) - $(caselabel) : snapshots = $(left)-$(left+1)/$(nsnapshots)")
 end
 
 # ╔═╡ 7f5c642e-ebf2-4992-84f6-cfe169913fe4
@@ -2442,6 +2447,7 @@ version = "1.4.1+0"
 # ╟─f4f66a74-5a05-498a-b3db-b7973241429f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
+# ╠═1c880145-d1d0-420b-af3f-f6a79d8d8e7c
 # ╟─fe829fc7-0b0e-43e9-87a4-bc69d1f48fa0
 # ╠═c9a3b116-429a-4937-a0fc-a70fbd0a32ed
 # ╠═f6641248-3519-4c0f-b02b-a2e8343a9c6e
