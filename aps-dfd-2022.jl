@@ -142,8 +142,8 @@ md"""
 Tune the following values:
   - Autoplay snapshots $(@bind autoplay PlutoUI.CheckBox(default=false))
   - Topological noise cutoff $(@bind cut PlutoUI.Slider(0:0.01:10, show_value = true, default=0.5))
-  - Show H0? $(@bind showH0 CheckBox(default=true))
-  - Show H1? $(@bind showH1 CheckBox(default=true))
+  - Show H0 reps.? $(@bind showH0 CheckBox(default=true))
+  - Show H1 reps.? $(@bind showH1 CheckBox(default=true))
 
 - Saving? $(@bind issaving CheckBox(default=false))
 - Extension: $(@bind ext Select(["png","pdf"]))
@@ -159,7 +159,8 @@ function display_vorticity(XY,Vs,titlestring="")
 		fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
 		colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
 		background_color = :transparent, 
-		clim=(-clevel,clevel),aspect_ratio=:equal, xlims=(0.0505,1.75), ylims=(-1.6,1.6),
+		aspect_ratio = :equal,
+		clim=(-clevel,clevel), xlims=(0.0505,1.75), ylims=(-1.6,1.6),
 		size=(600,800), foreground_color = :black, dpi=300
 	);
 	return plot_handle
@@ -349,6 +350,28 @@ function plotH1representativeVector!(
 
 end
 
+# ╔═╡ 2b83a288-4ccc-4545-b964-5b43e964d321
+"""
+For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
+"""
+function plotH1representativeVector2!( 
+	rep :: H1representativeVector, 
+	plothandle, XY; kwargs... ) 
+
+	sel=[ edge[i] for i in [1] for edge in reverse(rep[1]) ]
+
+	#@show XY[1][sel]
+	@show XY[2][sel]
+	plot!(plothandle, 
+		XY[2][sel], XY[1][sel],
+		markersize=1, markercolor=:black,
+		palette=:Set1_9; kwargs...)	
+			
+
+	return plothandle
+
+end
+
 # ╔═╡ d3a963e8-9508-4a93-8c49-5013af4c9ff1
 md"""
 ## PlotAll
@@ -400,14 +423,20 @@ TODO At this point, it's not clear to me (=Marko) what should be the default
 """
 function plotPDs( PD_pos, PD_neg; 
 				  neg_swap_axes=false, neg_flip_sign=true, kwargs... )
-	@show PD_pos
-	@show PD_neg
+
 	P = plot(PD_pos;
-		seriescolor=[:blue, :green], label =[L"Subl. $H_0$" L"Subl. $H_1$"], kwargs...)
+	seriescolor=[:blue, :green], label =["Subl. H0" "Subl. H1"], kwargs...)
 	
 	plot!(P, flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
-			seriescolor=[:red, :orange], label =[L"Superl. $H_0$" L"Superl. $H_1$"], kwargs... )
+			seriescolor=[:red, :orange], 
+			label =["Superl. H0" "Superl. H1"], 
+			kwargs... )
 	return P
+end
+
+# ╔═╡ 47e44a3e-68be-412c-98ab-beb02b105159
+begin
+	@show a = ["m","n"][ BitArray([true,false])]
 end
 
 # ╔═╡ 8825772f-ca29-4457-a281-39d53f1794e0
@@ -592,7 +621,7 @@ Plot everything one needs for a snapshot.
 """
 function plotall( snapshot;
 	plot_title = "$(caselabel) : snapshot = $(j)/$(nsnapshots)",
-	H0 = showH0, H1=showH1
+	H0 = showH0, H1=showH1, update=plotH1representativeVector!
  )
 
 	#### PLOTTING REPRESENTATIVES
@@ -606,18 +635,20 @@ function plotall( snapshot;
 	neg_reps0 = getH0representativePoint.(PH_neg[1])
 	pos_reps0 = getH0representativePoint.(PH_pos[1])
 
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:green)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:magenta)
 	end
 
 	if H1
 	neg_reps1 = getH1representativeVector.(PH_neg[2])
 	pos_reps1 = getH1representativeVector.(PH_pos[2])
 
-	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
 	
-	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	update.(pos_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	
+	update.(neg_reps1, [plot_handle], [XY],color=:green,linewidth=2)
 	end
+
 
 	### PLOTTING PD
 	pd_handle = plotPDs( PH_pos, PH_neg; xlims=(-50,50),ylims=(-50,50) )
@@ -656,8 +687,8 @@ if doDistanceTraces
 end;
 
 
-# ╔═╡ a7d81dd1-74c3-4242-a840-fbf638e9e0ab
-plotall(snapshots[1])[2]
+# ╔═╡ efa9c0e4-9216-49c3-ba64-232aab6eee8b
+plotall( snapshots[1], update=plotH1representativeVector2! )[1]
 
 # ╔═╡ 51bcc13d-ea96-4a38-9246-c32f27fb46d7
 if doDistanceTraces
@@ -696,8 +727,8 @@ end
 # ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
 if doDistanceTraces
 	l = @layout [a; b c; d e]
-	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)" )
-	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)" )
+	P1,D1 = plotall( snapshots[left], plot_title="S = $(left)",H0 = showH0, H1=showH1 )
+	P2,D2 = plotall( snapshots[left+1], plot_title="S = $(left+1)",H0 = showH0, H1=showH1 )
 	comparison_plot = plot(ptrace,P1,P2,D1,D2, layout=l,size=(1200,1024))
 end
 
@@ -2447,14 +2478,16 @@ version = "1.4.1+0"
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
 # ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
+# ╠═2b83a288-4ccc-4545-b964-5b43e964d321
+# ╠═efa9c0e4-9216-49c3-ba64-232aab6eee8b
 # ╟─d3a963e8-9508-4a93-8c49-5013af4c9ff1
 # ╠═9714864a-1172-4331-8d70-a92baf41b950
-# ╠═a7d81dd1-74c3-4242-a840-fbf638e9e0ab
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
+# ╠═47e44a3e-68be-412c-98ab-beb02b105159
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
 # ╠═51bcc13d-ea96-4a38-9246-c32f27fb46d7
