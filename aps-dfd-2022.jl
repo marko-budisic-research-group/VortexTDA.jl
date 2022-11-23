@@ -268,8 +268,7 @@ function plotH0representativePoint!(
 
 	coordinates = getindex.(reps,1)
 	
-	plot!(plothandle, XY[2][coordinates], XY[1][coordinates], 
-			seriestype = :scatter; 
+	scatter!(plothandle, XY[2][coordinates], XY[1][coordinates];
 			markersize=5,
 			palette=:Set1_9, kwargs...)
 
@@ -676,8 +675,26 @@ if showH0
 	neg_reps0 = getH0representativePoint.(PH_neg[1])
 	pos_reps0 = getH0representativePoint.(PH_pos[1])
 
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:magenta)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green)
+	local x1 =  persistence.(PH_pos[1]) 
+	isfin(xx) = .~(isinf.(xx))
+	finite(xx) = xx[isfin(xx)]
+	normalize(xx) = 
+		(xx .- minimum(finite(xx))) ./ 
+		(maximum(finite(xx)) .- minimum(finite(xx)))  
+	
+
+	
+	plotH0representativePoint!(pos_reps0, plot_handle, XY; 
+	markercolor=:magenta,
+	markerstrokecolor=:black,markerstrokewidth=2,
+	markerstrokealpha=1.0,	
+	markeralpha = normalize( persistence.(PH_pos[1])),
+	)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY; 
+	markercolor=:green, markerstrokecolor=:black,
+	markerstrokealpha=1.0,
+	markeralpha = normalize( persistence.(PH_neg[1]) ) 
+	)
 
 	plot_handle
 end
@@ -709,12 +726,23 @@ function plotall( snapshot;
 	# background - 
 	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title);
 
+	pct = 0.8
+
+	isfin(xx) = .~(isinf.(xx))
+	finite(xx) = xx[isfin(xx)]
+	normalize(xx) = 
+		(xx .- minimum(finite(xx))) ./ 
+		(maximum(finite(xx)) .- minimum(finite(xx))) .* pct .+ (1-pct)
+	
+
 	if H0
 	neg_reps0 = getH0representativePoint.(PH_neg[1])
 	pos_reps0 = getH0representativePoint.(PH_pos[1])
-
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:green)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:magenta)
+		
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:green,
+	alpha=normalize(persistence.(PH_pos[1])), markerstrokealpha=1.0)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:magenta,
+	alpha=normalize(persistence.(PH_neg[1])),  markerstrokealpha=1.0)
 	end
 
 	if H1
@@ -773,6 +801,14 @@ if issaving
 
 	XLSX.writetable(joinpath(local_path,xlsfile), snapshots_pair_distances, overwrite=true)
 
+end
+
+# ╔═╡ 2d967c0c-3500-47b6-b4ad-5adb23045d43
+begin
+	x = [1,2,3]
+y = [1,-1,1]
+z = [30,20,10]
+	scatter(x,y,alpha=normalize(z))
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -2581,5 +2617,6 @@ version = "1.4.1+0"
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
+# ╠═2d967c0c-3500-47b6-b4ad-5adb23045d43
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
