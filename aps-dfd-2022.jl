@@ -705,9 +705,9 @@ if showH1
 	neg_reps1 = getH1representativeVector.(PH_neg[2])
 	pos_reps1 = getH1representativeVector.(PH_pos[2])
 
-	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY];color=:green,linewidth=2)
 	
-	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY];color=:magenta,linewidth=2)
 	plot_handle
 end
 
@@ -726,7 +726,7 @@ function plotall( snapshot;
 	# background - 
 	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title);
 
-	pct = 0.8
+	pct = 0.4 # minimum alpha percentage
 
 	isfin(xx) = .~(isinf.(xx))
 	finite(xx) = xx[isfin(xx)]
@@ -738,27 +738,40 @@ function plotall( snapshot;
 	if H0
 	neg_reps0 = getH0representativePoint.(PH_neg[1])
 	pos_reps0 = getH0representativePoint.(PH_pos[1])
+
+	pos_alpha = normalize(persistence.(PH_pos[1])).*0.8 .+ 0.2
+	neg_alpha = normalize(persistence.(PH_neg[1])).*0.8 .+ 0.2
+		
 		
 	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:green,
-	alpha=normalize(persistence.(PH_pos[1])), markerstrokealpha=1.0)
+	alpha=pos_alpha)
 	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:magenta,
-	alpha=normalize(persistence.(PH_neg[1])),  markerstrokealpha=1.0)
+	alpha=neg_alpha)
 	end
 
 	if H1
-	neg_reps1 = getH1representativeVector.(PH_neg[2])
-	pos_reps1 = getH1representativeVector.(PH_pos[2])
+		neg_reps1 = getH1representativeVector.(PH_neg[2])
+		pos_reps1 = getH1representativeVector.(PH_pos[2])
 
+		pos_alpha = normalize(persistence.(PH_pos[2])).*0.8 .+ 0.2
+		neg_alpha = normalize(persistence.(PH_neg[2])).*0.8 .+ 0.2
+		
 	
-	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY],color=:magenta,linewidth=2)
+		for (rep1, pers) in zip( pos_reps1, pos_alpha )
+			@show pers
+			plotH1representativeVector!(rep1, plot_handle, XY; color=:magenta,linewidth=2,alpha=pers)
+		end
 	
-	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY],color=:green,linewidth=2)
+		for (rep1, pers) in zip( neg_reps1, neg_alpha )
+			plotH1representativeVector!(rep1, plot_handle, XY; color=:green,linewidth=2,alpha=pers)
+		end
+		
 	end
 
-
 	### PLOTTING PD
-	pd_handle = plotPDs( PH_pos, PH_neg; xlims=(-50,50),ylims=(-50,50),
-	persistence= (PDplotStyle == "persistence"))
+	pd_handle = plotPDs( PH_pos, PH_neg; 
+		xlims=(-50,50),ylims=(-50,50),
+		persistence= (PDplotStyle == "persistence"))
 
 	return plot_handle, pd_handle
 
@@ -803,14 +816,6 @@ if issaving
 
 end
 
-# ╔═╡ 2d967c0c-3500-47b6-b4ad-5adb23045d43
-begin
-	x = [1,2,3]
-y = [1,-1,1]
-z = [30,20,10]
-	scatter(x,y,alpha=normalize(z))
-end
-
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -852,7 +857,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "9b1a46426c649d0129966a165aa111b4af8bc719"
+project_hash = "1e563e309a447bece0568447afa0beab796fd817"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -2617,6 +2622,5 @@ version = "1.4.1+0"
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
-# ╠═2d967c0c-3500-47b6-b4ad-5adb23045d43
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
