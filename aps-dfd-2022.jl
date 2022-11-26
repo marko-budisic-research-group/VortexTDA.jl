@@ -30,6 +30,7 @@ begin
 	using XLSX
 	using DataFrames
 	using Revise
+	import PyPlot
 end
 
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
@@ -38,6 +39,10 @@ TableOfContents()
 # ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
 # set all fonts in the Plots.jl to LaTeX-style fonts
 Plots.default(fontfamily = "serif")
+
+
+# ╔═╡ f7b9ed63-b559-4155-8389-dad59c66a5d1
+Plots.gr()
 
 # ╔═╡ f4f66a74-5a05-498a-b3db-b7973241429f
 md"""
@@ -158,7 +163,7 @@ Tune the following values:
 """
 Plot vorticity field as a red/blue heatmap.
 """
-function display_vorticity(XY,Vs,titlestring="")
+function display_vorticity(XY,Vs,titlestring="";kwargs...)
 
 	plot_handle = heatmap(XY[2].v,XY[1].v, Vs; title=titlestring,
 		fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
@@ -166,7 +171,7 @@ function display_vorticity(XY,Vs,titlestring="")
 		background_color = :transparent, 
 		aspect_ratio = :equal,
 		clim=(-clevel,clevel), xlims=(0.0505,1.75), ylims=(-1.6,1.6),
-		size=(600,800), foreground_color = :black, dpi=300
+		size=(600,800), foreground_color = :black, dpi=300,kwargs...
 	);
 	return plot_handle
 end
@@ -372,6 +377,12 @@ md"""
 ## PlotAll
 """
 
+# ╔═╡ f50f0fff-bc9e-4308-9ec9-fe51e53ab32b
+
+
+# ╔═╡ 811dc744-12de-4f6b-a4ff-dc4e2af6f348
+
+
 # ╔═╡ 116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 md"""
 # Plot Persistence Diagram
@@ -455,6 +466,9 @@ md"""
 - Wasserstein distance order $(@bind Wq PlutoUI.Slider(1:2,default=2,show_value=true))
 - Topological cutoff for comparison $(@bind comp_cut PlutoUI.Slider(0:0.01:20, default=1, show_value=true))
 """
+
+# ╔═╡ 28a1a684-7156-46c2-9351-94741a710752
+
 
 # ╔═╡ 823da704-1281-428a-9c30-f70807bf56bf
 """
@@ -712,7 +726,8 @@ function plotall( snapshot;
 	PH_pos = snapshot[:PHpos]
 
 	# background - 
-	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title);
+	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title;
+	c = palette([:blue,:white,:red],128),fill=false);
 
 	pct = 0.0# minimum alpha percentage
 
@@ -777,9 +792,6 @@ begin
 end
 
 
-# ╔═╡ 1668059f-cad1-4776-abb9-5967bb5e3428
-plotall(snapshots[1])
-
 # ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
 if doDistanceTraces
 	l = @layout [a; b c; d e]
@@ -810,6 +822,26 @@ if issaving
 
 end
 
+# ╔═╡ c0ed185e-bf85-4145-bf9d-dfe34b8dc143
+md"""
+# Vorticity level sets
+
+ε = $(@bind ε Slider(-15:0.1:15, show_value=true))
+
+"""
+
+# ╔═╡ b635a4db-ef3a-4817-a05e-10ca778a3d72
+begin
+	local l = @layout [a b]
+	S1 = display_vorticity(XY,snapshots[j][:vort_0];colorbar=false,fill=false,
+	c = palette([:blue,:white,:red],127));
+	L1 = display_vorticity(XY,snapshots[j][:vort_0] .< ε ;
+	fill=false,
+	colorbar=false, c = palette([:white, :gray], 2),clim=:auto);
+
+	plot(S1, L1; layout=l, plot_title = "ω(x) < ε = $(ε)")
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -824,6 +856,7 @@ PersistenceDiagrams = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Ripserer = "aa79e827-bd0b-42a8-9f10-2b302677a641"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
@@ -839,6 +872,7 @@ MAT = "~0.10.3"
 PersistenceDiagrams = "~0.9.7"
 Plots = "~1.36.4"
 PlutoUI = "~0.7.48"
+PyPlot = "~2.11.0"
 Revise = "~3.4.0"
 Ripserer = "~0.16.11"
 TestImages = "~1.7.1"
@@ -851,7 +885,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "6acd9a9e4e1f9399c1bf007e49cc9d95166cc0eb"
+project_hash = "61b66ac2ce73d806fa892493b5c0ad12db6610b4"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -904,11 +938,6 @@ deps = ["Libdl", "Pkg", "SHA", "URIParser", "Unicode"]
 git-tree-sha1 = "1289b57e8cf019aede076edab0587eb9644175bd"
 uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
 version = "1.0.2"
-
-[[deps.BitFlags]]
-git-tree-sha1 = "43b1a4a8f797c1cddadf60499a8a077d4af2cd2d"
-uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
-version = "0.1.7"
 
 [[deps.BufferedStreams]]
 git-tree-sha1 = "bb065b14d7f941b8617bc323063dbe79f55d16ea"
@@ -1025,6 +1054,12 @@ version = "0.5.2+0"
 git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
 uuid = "ed09eef8-17a6-5b46-8889-db040fac31e3"
 version = "0.3.2"
+
+[[deps.Conda]]
+deps = ["Downloads", "JSON", "VersionParsing"]
+git-tree-sha1 = "6e47d11ea2776bc5627421d59cdcc1296c058071"
+uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
+version = "1.7.0"
 
 [[deps.Contour]]
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
@@ -1279,10 +1314,10 @@ uuid = "0234f1f7-429e-5d53-9886-15a909be8d59"
 version = "1.12.2+2"
 
 [[deps.HTTP]]
-deps = ["Base64", "CodecZlib", "Dates", "IniFile", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "e1acc37ed078d99a714ed8376446f92a5535ca65"
+deps = ["Base64", "Dates", "IniFile", "Logging", "MbedTLS", "NetworkOptions", "Sockets", "URIs"]
+git-tree-sha1 = "0fa77022fe4b511826b39c894c90daf5fce3334a"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.5.5"
+version = "0.9.17"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
@@ -1660,12 +1695,6 @@ version = "0.3.19"
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
-[[deps.LoggingExtras]]
-deps = ["Dates", "Logging"]
-git-tree-sha1 = "cedb76b37bc5a6c702ade66be44f831fa23c681e"
-uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
-version = "1.0.0"
-
 [[deps.LoweredCodeUtils]]
 deps = ["JuliaInterpreter"]
 git-tree-sha1 = "dedbebe234e06e1ddad435f5c6f4b85cd8ce55f7"
@@ -1813,12 +1842,6 @@ deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
 version = "0.8.1+0"
 
-[[deps.OpenSSL]]
-deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
-git-tree-sha1 = "df6830e37943c7aaa10023471ca47fb3065cc3c4"
-uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
-version = "1.3.2"
-
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "f6e9dba33f9f2c44e08a020b0caf6903be540004"
@@ -1956,6 +1979,18 @@ deps = ["Distributed", "Printf"]
 git-tree-sha1 = "d7a7aef8f8f2d537104f170139553b14dfe39fe9"
 uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
 version = "1.7.2"
+
+[[deps.PyCall]]
+deps = ["Conda", "Dates", "Libdl", "LinearAlgebra", "MacroTools", "Serialization", "VersionParsing"]
+git-tree-sha1 = "53b8b07b721b77144a0fbbbc2675222ebf40a02d"
+uuid = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+version = "1.94.1"
+
+[[deps.PyPlot]]
+deps = ["Colors", "LaTeXStrings", "PyCall", "Sockets", "Test", "VersionParsing"]
+git-tree-sha1 = "f9d953684d4d21e947cb6d642db18853d43cb027"
+uuid = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+version = "2.11.0"
 
 [[deps.QOI]]
 deps = ["ColorTypes", "FileIO", "FixedPointNumbers"]
@@ -2104,11 +2139,6 @@ deps = ["Dates", "Grisu"]
 git-tree-sha1 = "91eddf657aca81df9ae6ceb20b959ae5653ad1de"
 uuid = "992d4aef-0814-514b-bc4d-f2e9a6c4116f"
 version = "1.0.3"
-
-[[deps.SimpleBufferStream]]
-git-tree-sha1 = "874e8867b33a00e784c8a7e4b60afe9e037b74e1"
-uuid = "777ac1f9-54b0-4bf8-805c-2214025038e7"
-version = "1.1.0"
 
 [[deps.SimpleTraits]]
 deps = ["InteractiveUtils", "MacroTools"]
@@ -2311,6 +2341,11 @@ version = "0.4.1"
 git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"
 uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.2.0"
+
+[[deps.VersionParsing]]
+git-tree-sha1 = "58d6e80b4ee071f5efd07fda82cb9fbe17200868"
+uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
+version = "1.3.0"
 
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
@@ -2571,6 +2606,7 @@ version = "1.4.1+0"
 # ╠═43e81d74-37d8-4574-b06e-a57be04fe6be
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
 # ╠═d17bfc41-9551-4b0b-b643-8a955fb492a0
+# ╠═f7b9ed63-b559-4155-8389-dad59c66a5d1
 # ╟─f4f66a74-5a05-498a-b3db-b7973241429f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
 # ╠═523b6671-00c3-45c8-92ba-f8540829dcd7
@@ -2608,8 +2644,9 @@ version = "1.4.1+0"
 # ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
 # ╠═2b83a288-4ccc-4545-b964-5b43e964d321
 # ╟─d3a963e8-9508-4a93-8c49-5013af4c9ff1
-# ╠═1668059f-cad1-4776-abb9-5967bb5e3428
+# ╠═f50f0fff-bc9e-4308-9ec9-fe51e53ab32b
 # ╠═9714864a-1172-4331-8d70-a92baf41b950
+# ╠═811dc744-12de-4f6b-a4ff-dc4e2af6f348
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
@@ -2627,6 +2664,7 @@ version = "1.4.1+0"
 # ╠═e2b8fd8b-5415-4ae0-94cc-64286f23813d
 # ╠═84285ce0-9f49-4f75-be84-2125a35b5e75
 # ╠═5535b772-62e5-46ff-972d-945bdea199be
+# ╠═28a1a684-7156-46c2-9351-94741a710752
 # ╠═823da704-1281-428a-9c30-f70807bf56bf
 # ╠═14a43458-3962-4ca0-abaf-938db2f32c5a
 # ╟─5d5090ae-8083-40d1-8ac0-38a2f9555733
@@ -2636,5 +2674,7 @@ version = "1.4.1+0"
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
+# ╠═c0ed185e-bf85-4145-bf9d-dfe34b8dc143
+# ╠═b635a4db-ef3a-4817-a05e-10ca778a3d72
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
