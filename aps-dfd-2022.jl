@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.14
+# v0.19.16
 
 using Markdown
 using InteractiveUtils
@@ -422,17 +422,21 @@ TODO At this point, it's not clear to me (=Marko) what should be the default
 
 """
 function plotPDs( PD_pos, PD_neg; 
-				  neg_swap_axes=false, neg_flip_sign=true, kwargs... )
+				  neg_swap_axes=false, neg_flip_sign=true, infinity=60, kwargs... )
 
 	P = plot(PD_pos; markersize=7,
 	seriescolor=[:blue, :green], label =["Subl. H0" "Subl. H1"], kwargs...)
 	
 	plot!(P, flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
+			infinity= neg_flip_sign ? -infinity : infinity,	
 			seriescolor=[:red, :orange], marker=:d, markersize=7,
 			label =["Superl. H0" "Superl. H1"], 
 			kwargs... )
 	return P
 end
+
+# ╔═╡ 3f83c58a-dd59-4194-a5ee-ea8bfc101cdd
+
 
 # ╔═╡ 8825772f-ca29-4457-a281-39d53f1794e0
 md"""
@@ -441,15 +445,15 @@ md"""
 Produce traces : $(@bind doDistanceTraces CheckBox(default=true))
 """
 
-# ╔═╡ e2b8fd8b-5415-4ae0-94cc-64286f23813d
-md"""
-- Wasserstein distance order $(@bind Wq PlutoUI.Slider(1:2,default=2,show_value=true))
-- Topological cutoff for comparison $(@bind comp_cut PlutoUI.Slider(0:0.01:10, default=1, show_value=true))
-"""
-
 # ╔═╡ 32fb226a-cbe0-4ca6-b495-66c189238807
 md"""
 - Use peak $(@bind peakD Select(["Wasserstein","Bottleneck"],default="Wasserstein")) distance instead? $(@bind usepeak CheckBox(default=true))
+"""
+
+# ╔═╡ e2b8fd8b-5415-4ae0-94cc-64286f23813d
+md"""
+- Wasserstein distance order $(@bind Wq PlutoUI.Slider(1:2,default=2,show_value=true))
+- Topological cutoff for comparison $(@bind comp_cut PlutoUI.Slider(0:0.01:20, default=1, show_value=true))
 """
 
 # ╔═╡ 823da704-1281-428a-9c30-f70807bf56bf
@@ -564,7 +568,6 @@ function pad_grid(X,Y)
 	Yy = append!([Y[1]-delta_y], Y, [Y[end]+delta_y])
 	return Xx, Yy
 end
-	
 
 # ╔═╡ 8a3b3829-8756-44d8-b569-9f0ecc9a63ce
 """
@@ -715,10 +718,14 @@ function plotall( snapshot;
 
 	isfin(xx) = .~(isinf.(xx))
 	finite(xx) = xx[isfin(xx)]
-	normalize(xx) = 
+	function normalize(xx) 
+		if isempty(xx) || isempty(finite(xx))
+			return xx
+		else
 		(xx .- minimum(finite(xx))) ./ 
 		(maximum(finite(xx)) .- minimum(finite(xx))) .* (1-pct) .+ pct
-	
+		end
+	end
 
 	if H0
 	neg_reps0 = getH0representativePoint.(PH_neg[1])
@@ -754,8 +761,8 @@ function plotall( snapshot;
 
 	### PLOTTING PD
 	pd_handle = plotPDs( PH_pos, PH_neg; 
-		xlims=(-50,50),ylims=(-50,50),
-		persistence= (PDplotStyle == "persistence"))
+		xlims=(-60,60),ylims=(-60,60),
+		persistence= (PDplotStyle == "persistence"), infinity=50)
 
 	return plot_handle, pd_handle
 
@@ -771,7 +778,7 @@ end
 
 
 # ╔═╡ 1668059f-cad1-4776-abb9-5967bb5e3428
-plotall(snapshot)
+plotall(snapshots[1])
 
 # ╔═╡ 84285ce0-9f49-4f75-be84-2125a35b5e75
 if doDistanceTraces
@@ -783,7 +790,7 @@ if doDistanceTraces
 end
 
 # ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
-plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-50,50), ylims=(-50,50),
+plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-60,60),ylims=(-60,60),
 						title=plot_title, persistence= (PDplotStyle == "persistence"),
 						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
 
@@ -802,24 +809,6 @@ if issaving
 	XLSX.writetable(joinpath(local_path,xlsfile), snapshots_pair_distances, overwrite=true)
 
 end
-
-# ╔═╡ 75bdf538-484c-4c4f-b0d5-8d20abe857d7
-begin
-	a = PersistenceDiagram([])
-	b = PersistenceDiagram([])
-#	Bottleneck()(a,b; matching=false)
-end
-
-# ╔═╡ 099fb485-3d78-4f0b-84b7-aed3e684039a
-count(!isfinite, a) == count(!isfinite,b)
-
-# ╔═╡ 81d0022f-f7b2-4280-81f1-d658a96cc2a1
-begin
-Bottleneck()(a,b;matching=false)
-end
-
-# ╔═╡ 6a1f603d-5e8f-4229-85db-876a3b02d441
-
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1504,9 +1493,9 @@ version = "1.0.0"
 
 [[deps.JLD2]]
 deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "Printf", "Reexport", "TranscodingStreams", "UUIDs"]
-git-tree-sha1 = "18dd357553912b6adc23b5f721e4be19930140c6"
+git-tree-sha1 = "ec8a9c9f0ecb1c687e34c1fda2699de4d054672a"
 uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.4.28"
+version = "0.4.29"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -1624,9 +1613,9 @@ version = "1.8.7+0"
 
 [[deps.Libglvnd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll", "Xorg_libXext_jll"]
-git-tree-sha1 = "7739f837d6447403596a75d19ed01fd08d6f56bf"
+git-tree-sha1 = "6f73d1dd803986947b2c750138528a999a6c7733"
 uuid = "7e76a0d4-f3c7-5321-8279-8d96eeed0f29"
-version = "1.3.0+3"
+version = "1.6.0+0"
 
 [[deps.Libgpg_error_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1890,9 +1879,9 @@ version = "2.5.1"
 
 [[deps.PersistenceDiagrams]]
 deps = ["Compat", "Hungarian", "MLJModelInterface", "RecipesBase", "ScientificTypes", "Statistics", "Tables"]
-git-tree-sha1 = "4fbda940a01077ff156584b5aeca19113e8c5ed1"
+git-tree-sha1 = "dbda49c3e4688b6f258f0713486c49df08dc2e89"
 uuid = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
-version = "0.9.7"
+version = "0.9.8"
 
 [[deps.Pipe]]
 git-tree-sha1 = "6842804e7867b115ca9de748a0cf6b364523c16d"
@@ -2626,15 +2615,16 @@ version = "1.4.1+0"
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
 # ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
+# ╠═3f83c58a-dd59-4194-a5ee-ea8bfc101cdd
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036
-# ╟─e2b8fd8b-5415-4ae0-94cc-64286f23813d
 # ╠═51bcc13d-ea96-4a38-9246-c32f27fb46d7
 # ╠═a4e5c8c4-2af8-4368-94e7-ddbfb13936b5
 # ╟─72f30f80-e20a-4b70-af17-967b52daf023
 # ╟─32fb226a-cbe0-4ca6-b495-66c189238807
 # ╠═4363a81d-6a48-421d-83fa-096d6f54afc8
 # ╠═12c522ed-788c-43e7-9046-d357fc28a4be
+# ╠═e2b8fd8b-5415-4ae0-94cc-64286f23813d
 # ╠═84285ce0-9f49-4f75-be84-2125a35b5e75
 # ╠═5535b772-62e5-46ff-972d-945bdea199be
 # ╠═823da704-1281-428a-9c30-f70807bf56bf
@@ -2646,9 +2636,5 @@ version = "1.4.1+0"
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
 # ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
-# ╠═75bdf538-484c-4c4f-b0d5-8d20abe857d7
-# ╠═099fb485-3d78-4f0b-84b7-aed3e684039a
-# ╠═81d0022f-f7b2-4280-81f1-d658a96cc2a1
-# ╠═6a1f603d-5e8f-4229-85db-876a3b02d441
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
