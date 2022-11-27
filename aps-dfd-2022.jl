@@ -170,7 +170,7 @@ function display_vorticity(XY,Vs,titlestring="";kwargs...)
 		colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
 		background_color = :transparent, 
 		aspect_ratio = :equal,
-		clim=(-clevel,clevel), xlims=(0.0505,1.75), ylims=(-1.6,1.6),
+		clim=(-clevel,clevel), xlims=(0.0505,1.25), ylims=(-1.6,1.6),
 		size=(600,800), foreground_color = :black, dpi=300,kwargs...
 	);
 	return plot_handle
@@ -719,7 +719,7 @@ Plot everything one needs for a snapshot.
 """
 function plotall( snapshot;
 	plot_title = "Panel $(panel) - $(caselabel) : snapshot = $(j)/$(nsnapshots)",
-	H0 = showH0, H1=showH1 )
+	H0 = showH0, H1=showH1, kwargs... )
 
 	#### PLOTTING REPRESENTATIVES
 	PH_neg = snapshot[:PHneg]
@@ -727,7 +727,7 @@ function plotall( snapshot;
 
 	# background - 
 	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title;
-	c = palette([:blue,:white,:red],128),fill=false);
+	c = palette([:blue,:white,:red],128),fill=false,kwargs...);
 
 	pct = 0.0# minimum alpha percentage
 
@@ -826,21 +826,48 @@ end
 md"""
 # Vorticity level sets
 
-ε = $(@bind ε Slider(-15:0.1:15, show_value=true))
+ε = $(@bind ε Slider(-15:1:15, show_value=true))
 
 """
 
 # ╔═╡ b635a4db-ef3a-4817-a05e-10ca778a3d72
 begin
-	local l = @layout [a b]
-	S1 = display_vorticity(XY,snapshots[j][:vort_0];colorbar=false,fill=false,
-	c = palette([:blue,:white,:red],127));
+	local l = @layout [a b; d e]
+	S1 = plotall(snapshots[j];colorbar=false)[1];
+
+	
 	L1 = display_vorticity(XY,snapshots[j][:vort_0] .< ε ;
-	fill=false,
+	fill=false, interpolate=false, title = L"\omega (x,y) < \varepsilon = %$(ε)",
 	colorbar=false, c = palette([:white, :gray], 2),clim=:auto);
 
-	plot(S1, L1; layout=l, plot_title = "ω(x) < ε = $(ε)")
+
+
+	B1 = barcode(PH_pos; xlims=(-20,20),title="Sublevel sets",xlabel="ω")
+	vline!(B1,[ε]; color=:gray,linestyle=:dash,label="ε")
+	B2 = barcode(PH_neg; xlims=(-20,20),title="Superlevel sets",xlabel="ω",xflip=true,xticks=((-20,-10,0,10,20), (20,10,0,-10,-20)))
+	vline!(B2,[-ε]; color=:gray,linestyle=:dash,label="ε")
+	
+	levelset_handle = plot(S1, L1,B1, B2; layout=l,interpolate=false,size=(1000,800))
 end
+
+
+
+# ╔═╡ 662ad30c-7d2c-4c5b-b48d-63e9222e7b07
+if issaving 
+	levelsetfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_$(ε).$(ext)"
+	savefig( L1,joinpath(local_path,levelsetfile))
+end
+
+# ╔═╡ 3e13e570-82ee-4153-a5a8-a7aab161913f
+md"""
+# Barcode
+"""
+
+# ╔═╡ b9f2be3e-7ea5-4868-afde-d63ef87c3fd4
+barcode(PH_pos)
+
+# ╔═╡ bd715a7e-1220-428f-b5d9-822345864cee
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2676,5 +2703,9 @@ version = "1.4.1+0"
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
 # ╠═c0ed185e-bf85-4145-bf9d-dfe34b8dc143
 # ╠═b635a4db-ef3a-4817-a05e-10ca778a3d72
+# ╠═662ad30c-7d2c-4c5b-b48d-63e9222e7b07
+# ╠═3e13e570-82ee-4153-a5a8-a7aab161913f
+# ╠═b9f2be3e-7ea5-4868-afde-d63ef87c3fd4
+# ╠═bd715a7e-1220-428f-b5d9-822345864cee
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
