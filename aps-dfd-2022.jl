@@ -38,7 +38,7 @@ TableOfContents()
 
 # ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
 # set all fonts in the Plots.jl to LaTeX-style fonts
-Plots.default(fontfamily = "serif")
+Plots.default(fontfamily = "serif",tickfont = (12, :black))
 
 
 # ╔═╡ f7b9ed63-b559-4155-8389-dad59c66a5d1
@@ -169,7 +169,7 @@ function display_vorticity(XY,Vs,titlestring="";kwargs...)
 		fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
 		colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
 		background_color = :transparent, 
-		aspect_ratio = :equal,
+		aspect_ratio = :equal, tickfont = (12, :black),xaxis = (tickfontrotation = 60.0),
 		clim=(-clevel,clevel), xlims=(0.0505,1.25), ylims=(-1.6,1.6),
 		size=(600,800), foreground_color = :black, dpi=300,kwargs...
 	);
@@ -378,6 +378,9 @@ md"""
 """
 
 # ╔═╡ f50f0fff-bc9e-4308-9ec9-fe51e53ab32b
+
+
+# ╔═╡ 32777668-0c47-42bf-afe1-1b3496b9c0a2
 
 
 # ╔═╡ 811dc744-12de-4f6b-a4ff-dc4e2af6f348
@@ -650,7 +653,7 @@ if doDistanceTraces
 		)		),
 		color=[:red :orange :blue :green :purple :brown ],
 		linewidth=[2 2 2 2 4 4],
-		plot_title = "Pairwise topological distance")
+		plot_title = "Pairwise topological distance", legend=:outertopright)
 	vline!(ptrace,[left], label="Snapshot Comp.",linestyle=:dashdot, linewidth=2,color=:black)
 end
 
@@ -729,7 +732,7 @@ function plotall( snapshot;
 	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title;
 	c = palette([:blue,:white,:red],128),fill=false,kwargs...);
 
-	pct = 0.0# minimum alpha percentage
+	pct = 0.5# minimum alpha percentage
 
 	isfin(xx) = .~(isinf.(xx))
 	finite(xx) = xx[isfin(xx)]
@@ -750,10 +753,10 @@ function plotall( snapshot;
 	neg_alpha = normalize(persistence.(PH_neg[1]))
 		
 		
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:green,
-	alpha=pos_alpha)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:magenta,
-	alpha=neg_alpha)
+	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:blue, marker=:circle,
+	alpha=pos_alpha,markersize=6)
+	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green, marker=:square,
+	alpha=neg_alpha,markersize=6)
 	end
 
 	if H1
@@ -765,11 +768,11 @@ function plotall( snapshot;
 		
 	
 		for (rep1, pers) in zip( pos_reps1, pos_alpha )
-			plotH1representativeVector!(rep1, plot_handle, XY; color=:magenta,linewidth=2,alpha=pers)
+			plotH1representativeVector!(rep1, plot_handle, XY; color=:red,linewidth=4,alpha=pers)
 		end
 	
 		for (rep1, pers) in zip( neg_reps1, neg_alpha )
-			plotH1representativeVector!(rep1, plot_handle, XY; color=:green,linewidth=2,alpha=pers)
+			plotH1representativeVector!(rep1, plot_handle, XY; color=:orange,linewidth=4,alpha=pers)
 		end
 		
 	end
@@ -777,7 +780,7 @@ function plotall( snapshot;
 	### PLOTTING PD
 	pd_handle = plotPDs( PH_pos, PH_neg; 
 		xlims=(-60,60),ylims=(-60,60),
-		persistence= (PDplotStyle == "persistence"), infinity=50)
+		persistence= (PDplotStyle == "persistence"), infinity=50,legend=:outertopright)
 
 	return plot_handle, pd_handle
 
@@ -833,30 +836,34 @@ md"""
 # ╔═╡ b635a4db-ef3a-4817-a05e-10ca778a3d72
 begin
 	local l = @layout [a b; d e]
-	S1 = plotall(snapshots[j];colorbar=false)[1];
+#	S1 = plotall(snapshots[j];colorbar=false)[1];
+	S1 = display_vorticity(XY,snapshots[j][:vort_0] ;
+	fill=false, c=:balance,interpolate=false, title = L"\omega (x,y)");
 
+	
 	
 	L1 = display_vorticity(XY,snapshots[j][:vort_0] .< ε ;
 	fill=false, interpolate=false, title = L"\omega (x,y) < \varepsilon = %$(ε)",
 	colorbar=false, c = palette([:white, :gray], 2),clim=:auto);
 
 
-
-	B1 = barcode(PH_pos; xlims=(-20,20),title="Sublevel sets",xlabel="ω")
-	vline!(B1,[ε]; color=:gray,linestyle=:dash,label="ε")
-	B2 = barcode(PH_neg; xlims=(-20,20),title="Superlevel sets",xlabel="ω",xflip=true,xticks=((-20,-10,0,10,20), (20,10,0,-10,-20)))
-	vline!(B2,[-ε]; color=:gray,linestyle=:dash,label="ε")
+	B1 = barcode(PH_pos; xlims=(-20,20),title="Sublevel sets",xlabel=L"\omega",linewidth=6)
+	vline!(B1,[1]; linewidth=3,color=:gray,linestyle=:dash,label=L"$\varepsilon$")
+	vline!(B1,[12]; linewidth=3,color=:gray,linestyle=:dash,label=L"$\varepsilon$")
 	
-	levelset_handle = plot(S1, L1,B1, B2; layout=l,interpolate=false,size=(1000,800))
+	B2 = barcode(PH_neg; xlims=(-20,20),linewidth=6,title="Superlevel sets",xlabel=L"\omega",xflip=true,xticks=((-20,-10,0,10,20), (20,10,0,-10,-20)))
+	vline!(B2,[-1]; linewidth=3, color=:gray,linestyle=:dash,label=L"$\varepsilon$")
+	vline!(B2,[-12]; linewidth=3, color=:gray,linestyle=:dash,label=L"$\varepsilon$")
+
+	
+	levelset_handle = plot(S1, L1,B1, B2; layout=l,interpolate=false,size=(1200,600),dpi=300)
 end
 
 
 
-# ╔═╡ 662ad30c-7d2c-4c5b-b48d-63e9222e7b07
-if issaving 
-	levelsetfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_$(ε).$(ext)"
-	savefig( L1,joinpath(local_path,levelsetfile))
-end
+# ╔═╡ 66a8b56e-d180-4b3a-85f0-c51eb8adf61f
+Sgen = plotall(snapshots[j];colorbar=false,fill=false, c=:balance,interpolate=false,plot_title="")[1]
+
 
 # ╔═╡ 3e13e570-82ee-4153-a5a8-a7aab161913f
 md"""
@@ -864,10 +871,30 @@ md"""
 """
 
 # ╔═╡ b9f2be3e-7ea5-4868-afde-d63ef87c3fd4
-barcode(PH_pos)
+barcode(PH_pos; linestyle=[(:solid),(:dash)],linewidth=6,marker=:o)
 
 # ╔═╡ bd715a7e-1220-428f-b5d9-822345864cee
+	pd_handle = plotPDs( PH_pos, PH_neg;
+		xlims=(-30,30),ylims=(-30,30),
+		persistence=false, infinity=25,legend=:bottomleft)
 
+
+# ╔═╡ 662ad30c-7d2c-4c5b-b48d-63e9222e7b07
+if issaving
+	levelsetfile = "levelset_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
+	savefig(S1,joinpath(local_path,levelsetfile))
+
+	repsfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_reps.$(ext)"
+	savefig(Sgen,joinpath(local_path,repsfile))
+
+	phfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_PD.$(ext)"
+	savefig(pd_handle,joinpath(local_path,phfile))
+	
+	for (idx,v) in zip( ["lvl","b_sub","b_sup"], [L1,B1,B2] ) 
+		levelsetfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_eps_$(ε)_$(idx).$(ext)"
+		savefig( v,joinpath(local_path,levelsetfile))
+	end
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2673,6 +2700,7 @@ version = "1.4.1+0"
 # ╟─d3a963e8-9508-4a93-8c49-5013af4c9ff1
 # ╠═f50f0fff-bc9e-4308-9ec9-fe51e53ab32b
 # ╠═9714864a-1172-4331-8d70-a92baf41b950
+# ╠═32777668-0c47-42bf-afe1-1b3496b9c0a2
 # ╠═811dc744-12de-4f6b-a4ff-dc4e2af6f348
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
@@ -2703,6 +2731,7 @@ version = "1.4.1+0"
 # ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
 # ╠═c0ed185e-bf85-4145-bf9d-dfe34b8dc143
 # ╠═b635a4db-ef3a-4817-a05e-10ca778a3d72
+# ╠═66a8b56e-d180-4b3a-85f0-c51eb8adf61f
 # ╠═662ad30c-7d2c-4c5b-b48d-63e9222e7b07
 # ╠═3e13e570-82ee-4153-a5a8-a7aab161913f
 # ╠═b9f2be3e-7ea5-4868-afde-d63ef87c3fd4
