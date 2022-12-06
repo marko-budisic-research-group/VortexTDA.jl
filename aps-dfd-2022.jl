@@ -871,7 +871,13 @@ md"""
 """
 
 # ╔═╡ b9f2be3e-7ea5-4868-afde-d63ef87c3fd4
-barcode(PH_pos; linestyle=[(:solid),(:dash)],linewidth=6,marker=:o)
+begin
+	bar0 = barcode(PH_pos[1]; linewidth=6,marker=:o)
+	bar1 = barcode(PH_pos[2]; linewidth=6,marker=:v)
+	pd_bar = plot(bar0)
+	plot!(pd_bar,bar1)
+end
+
 
 # ╔═╡ bd715a7e-1220-428f-b5d9-822345864cee
 	pd_handle = plotPDs( PH_pos, PH_neg;
@@ -881,18 +887,18 @@ barcode(PH_pos; linestyle=[(:solid),(:dash)],linewidth=6,marker=:o)
 
 # ╔═╡ 662ad30c-7d2c-4c5b-b48d-63e9222e7b07
 if issaving
-	levelsetfile = "levelset_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
+	local levelsetfile = "levelset_$(coredesc)_$(@sprintf("%02d", j)).$(ext)"
 	savefig(S1,joinpath(local_path,levelsetfile))
 
-	repsfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_reps.$(ext)"
+	local repsfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_reps.$(ext)"
 	savefig(Sgen,joinpath(local_path,repsfile))
 
-	phfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_PD.$(ext)"
+	local phfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_PD.$(ext)"
 	savefig(pd_handle,joinpath(local_path,phfile))
 	
 	for (idx,v) in zip( ["lvl","b_sub","b_sup"], [L1,B1,B2] ) 
-		levelsetfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_eps_$(ε)_$(idx).$(ext)"
-		savefig( v,joinpath(local_path,levelsetfile))
+		epsfile = "levelset_$(coredesc)_$(@sprintf("%02d", j))_eps_$(ε)_$(idx).$(ext)"
+		savefig( v,joinpath(local_path,epsfile))
 	end
 end
 
@@ -2673,8 +2679,8 @@ version = "1.4.1+0"
 # ╟─585327c7-63b5-4197-ae66-4c90f09fbb6a
 # ╠═f4fe357b-15f4-46b6-8777-89fda5179603
 # ╟─56bd1c69-2d1e-4cd6-9603-7d986512f215
-# ╟─e3d69201-3c69-4835-bc81-9c46ed86d8cf
-# ╟─0d90f747-5130-4aa1-9b62-1267065fd5bc
+# ╠═e3d69201-3c69-4835-bc81-9c46ed86d8cf
+# ╠═0d90f747-5130-4aa1-9b62-1267065fd5bc
 # ╠═4224e4f8-6613-42b5-8ad5-23278f4caa21
 # ╠═eb15fcab-4261-48ad-88d2-b102a64785f3
 # ╠═8a3b3829-8756-44d8-b569-9f0ecc9a63ce
