@@ -1,0 +1,4 @@
+name = "VortexTDA"
+uuid = "fce2e195-78fd-42f7-a863-c94e5ae8c86f"
+authors = ["Marko <mbudisic@clarkson.edu>"]
+version = "0.1.0"
