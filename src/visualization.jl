@@ -57,7 +57,7 @@ end
 """
 For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
 
-#TODO Plot representative as a closed loop or a shape 
+# TODO Plot representative as a closed loop or a shape 
 #   Right now the plotting is done by putting down a line for each edge
 #   separately. It would be better if all edges were extracted in the 
 #   appropriate order and then a single plot command per representative issued.
@@ -83,7 +83,7 @@ end
 """
 Plots sublevel (positive) and superlevel (negative) persistence diagrams, with the option of either swapping axes or signs for the negative PD.
 
-#TODO At this point, it's not clear to me (=Marko) what should be the default
+# TODO At this point, it's not clear to me (=Marko) what should be the default
 
 """
 function plotPDs( PD_pos, PD_neg; 
