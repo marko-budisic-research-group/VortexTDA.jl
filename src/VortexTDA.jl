@@ -3,14 +3,9 @@ module VortexTDA
 using Ripserer
 using PersistenceDiagrams
 
-function cubicalhomology( field2D; kwargs... )
-
-    cubicalComplex = Cubical(field2D)
-    PH = ripserer(cubicalComplex;
-        reps=true, alg=:homology,
-        kwargs... )
-
-end
+include("preprocessing.jl")
+include("persistencehomology.jl")
+include("visualization.jl")
 
 export cubicalhomology
 
