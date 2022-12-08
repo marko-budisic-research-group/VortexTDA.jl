@@ -76,9 +76,13 @@ end
 """
 function flipPD( input :: PersistenceDiagram; axisswap=true, signflip=true )
 
-Swap the existing persistence diagram series so that instead of being plotted into top triangle of the 1st quadrant, it is plotted in the bottom triangle. Also flip sign of the interval values.
+Swap the existing persistence diagram series so that instead of being plotted
+into top triangle of the 1st quadrant, it is plotted in the bottom triangle.
+Also flip sign of the interval values.
 
-This is useful when one wants to plot both superlevel and sublevel set PD on the same graph. Sign flip is used when superlevel PD was computed as sublevel PD of a negative of the data.
+This is useful when one wants to plot both superlevel and sublevel set PD on the
+same graph. Sign flip is used when superlevel PD was computed as sublevel PD of
+a negative of the data.
 
 # TODO Look up in Dey or Rabadan or Edelsbrunner how this should be done properly (whether to only swap axes or also flip the sign).
 
