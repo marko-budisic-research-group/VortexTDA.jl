@@ -372,26 +372,6 @@ md"""
 			 ["persistence", "death"],default="death"))
 """
 
-# ╔═╡ 3f12b14b-ffd2-47e7-a480-52e0be81a157
-"""
-Swap the existing persistence diagram series so that instead of being plotted into top triangle of the 1st quadrant, it is plotted in the bottom triangle. Also flip sign of the interval values.
-
-This is useful when one wants to plot both superlevel and sublevel set PD on the same graph. Sign flip is used when superlevel PD was computed as sublevel PD of a negative of the data.
-
-"""
-function flipPD( input :: PersistenceDiagram; axisswap=true, signflip=true )
-
-	m = signflip ? -1 : 1;
-	swap = axisswap ? reverse : x -> x;
-	output = PersistenceDiagram(
-		[ PersistenceInterval( swap(m.*pi)...; pi.meta...)   for pi in input ];
-		input.meta ... 
-	)
-
-	return output
-
-end
-
 # ╔═╡ 58a89334-759c-4acb-8542-cf1491f6440d
 """
 Plots sublevel (positive) and superlevel (negative) persistence diagrams, with the option of either swapping axes or signs for the negative PD.
@@ -405,7 +385,7 @@ function plotPDs( PD_pos, PD_neg;
 	P = plot(PD_pos; markersize=7,
 	seriescolor=[:blue, :green], label =["Subl. H0" "Subl. H1"], kwargs...)
 	
-	plot!(P, flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
+	plot!(P, VortexTDA.flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
 			infinity= neg_flip_sign ? -infinity : infinity,	
 			seriescolor=[:red, :orange], marker=:d, markersize=7,
 			label =["Superl. H0" "Superl. H1"], 
@@ -897,7 +877,6 @@ end
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
-# ╠═3f12b14b-ffd2-47e7-a480-52e0be81a157
 # ╠═58a89334-759c-4acb-8542-cf1491f6440d
 # ╠═3f83c58a-dd59-4194-a5ee-ea8bfc101cdd
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0

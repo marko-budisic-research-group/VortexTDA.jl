@@ -30,6 +30,7 @@ function getH0representativePoint( PI::PersistenceDiagrams.PersistenceInterval, 
 	reprRaw = PI.representative;
 	reprVertexIdx = vertices.(reprRaw) # vector of single-element tuples
 	reprVertexIdx = getindex.(reprVertexIdx,1) # extract the (only) element from each tuple
+
 	#reprVertexIdx is a Vector of CartesianIndices pairs 
 	birthValue = birth.(reprRaw)
 	# values of the field that vertices take
@@ -68,5 +69,29 @@ function getH1representativeVector( PI::PersistenceDiagrams.PersistenceInterval 
 
 
 	return reprVertexIdx, birthValue
+
+end
+
+
+"""
+function flipPD( input :: PersistenceDiagram; axisswap=true, signflip=true )
+
+Swap the existing persistence diagram series so that instead of being plotted into top triangle of the 1st quadrant, it is plotted in the bottom triangle. Also flip sign of the interval values.
+
+This is useful when one wants to plot both superlevel and sublevel set PD on the same graph. Sign flip is used when superlevel PD was computed as sublevel PD of a negative of the data.
+
+TODO Look up in Dey or Rabadan or Edelsbrunner how this should be done properly (whether to only swap axes or also flip the sign).
+
+"""
+function flipPD( input :: PersistenceDiagram; axisswap=true, signflip=true )
+
+	m = signflip ? -1 : 1;
+	swap = axisswap ? reverse : x -> x;
+	output = PersistenceDiagram(
+		[ PersistenceInterval( swap(m.*pi)...; pi.meta...)   for pi in input ];
+		input.meta ... 
+	)
+
+	return output
 
 end
