@@ -590,9 +590,9 @@ function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=0.0,pad=Inf)
 	X,Y,vorticity = retrieve_snapshot(snapshot_idx, snapshot_panel)
 	Xx, Yy = VortexTDA.pad_grid(X,Y)
 	XY = ndgrid(Yy, Xx)
-	vort_pos = VortexTDA.pad_field_by_value(vorticity, pad, 1)	
-	vort_neg = VortexTDA.pad_field_by_value(-vorticity, pad, 1)		
-	vort_0 = VortexTDA.pad_field_by_value(vorticity, 0, 1)			
+	vort_pos = VortexTDA.pad_field_by_value(vorticity; value=pad)	
+	vort_neg = VortexTDA.pad_field_by_value(-vorticity; value=pad)		
+	vort_0 = VortexTDA.pad_field_by_value(vorticity; value=0)			
 	PH_pos, PH_neg = VortexTDA.cubicalhomology.( (vort_pos, vort_neg);cutoff=cutoff);
 	return Dict( 
 		[:PHpos, :PHneg, :XY, :vort_pos, :vort_neg, :vort_0] .=> 
