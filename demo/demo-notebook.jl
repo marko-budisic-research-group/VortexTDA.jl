@@ -47,11 +47,11 @@ end
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
-# ╔═╡ 1adbcdcb-063c-47d5-9b8e-ebc6442b7266
-
-
 # ╔═╡ 4bef167e-d811-4832-8646-3039409e012d
 import VortexTDA
+
+# ╔═╡ 1adbcdcb-063c-47d5-9b8e-ebc6442b7266
+VortexTDA.cubicalhomology
 
 # ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
 # set all fonts in the Plots.jl to LaTeX-style fonts
@@ -581,28 +581,6 @@ function retrieve_snapshot( idx, panel_n )
 	return X,Y, Matrix(vorticity) # otherwise transpose is passed and this can create issues 
 end
 
-# ╔═╡ 888dd2b9-51fc-464c-8a66-aadbe43c7d31
-"""
-Pad the field by frame of desired width containing specific value.
-"""
-function pad_by_value(input, value=0, n_pixels=1)
-	output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
-	output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
-	return output
-end
-
-# ╔═╡ 98cb65c7-cf0f-4042-926c-9a40c794165a
-"""
-Pad X/Y grid by appropriate values 
-"""
-function pad_grid(X,Y)
-	delta_x = (X[3]-X[1])/2 # why not X[2]-X[1]?
-	delta_y = (Y[3]-Y[1])/2
-	Xx = append!([X[1]-delta_x], X, [X[end]+delta_x])
-	Yy = append!([Y[1]-delta_y], Y, [Y[end]+delta_y])
-	return Xx, Yy
-end
-
 # ╔═╡ 8a3b3829-8756-44d8-b569-9f0ecc9a63ce
 """
 Retrieve the coordinate grid, and compute PDs for a particular snapshot
@@ -610,11 +588,11 @@ Retrieve the coordinate grid, and compute PDs for a particular snapshot
 """
 function snapshot_and_PD(snapshot_idx, snapshot_panel; cutoff=0.0,pad=Inf)
 	X,Y,vorticity = retrieve_snapshot(snapshot_idx, snapshot_panel)
-	Xx, Yy = pad_grid(X,Y)
+	Xx, Yy = VortexTDA.pad_grid(X,Y)
 	XY = ndgrid(Yy, Xx)
-	vort_pos = pad_by_value(vorticity, pad, 1)	
-	vort_neg = pad_by_value(-vorticity, pad, 1)		
-	vort_0 = pad_by_value(vorticity, 0, 1)			
+	vort_pos = VortexTDA.pad_field_by_value(vorticity, pad, 1)	
+	vort_neg = VortexTDA.pad_field_by_value(-vorticity, pad, 1)		
+	vort_0 = VortexTDA.pad_field_by_value(vorticity, 0, 1)			
 	PH_pos, PH_neg = VortexTDA.cubicalhomology.( (vort_pos, vort_neg);cutoff=cutoff);
 	return Dict( 
 		[:PHpos, :PHneg, :XY, :vort_pos, :vort_neg, :vort_0] .=> 
@@ -994,8 +972,6 @@ end
 # ╟─bdd1e568-3770-4931-b283-4841b1916e14
 # ╠═7b157ef8-eb23-44b8-aed8-3c3673ab072e
 # ╠═fed78c33-26a7-4400-854f-381be309fb0d
-# ╠═888dd2b9-51fc-464c-8a66-aadbe43c7d31
-# ╠═98cb65c7-cf0f-4042-926c-9a40c794165a
 # ╠═c0ed185e-bf85-4145-bf9d-dfe34b8dc143
 # ╠═b635a4db-ef3a-4817-a05e-10ca778a3d72
 # ╠═66a8b56e-d180-4b3a-85f0-c51eb8adf61f
