@@ -1,4 +1,0 @@
-- name: todo-actions
-  # You may pin to the exact commit or the version.
-  # uses: dtinth/todo-actions@2d54a7a6869a6314b5cb1e2b585b08acd06e6dad
-  uses: dtinth/todo-actions@v0.2.0
