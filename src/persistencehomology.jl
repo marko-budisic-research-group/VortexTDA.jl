@@ -80,9 +80,8 @@ Swap the existing persistence diagram series so that instead of being plotted in
 
 This is useful when one wants to plot both superlevel and sublevel set PD on the same graph. Sign flip is used when superlevel PD was computed as sublevel PD of a negative of the data.
 
-TODO Look up in Dey or Rabadan or Edelsbrunner how this should be done properly (whether to only swap axes or also flip the sign).
+# TODO Look up in Dey or Rabadan or Edelsbrunner how this should be done properly (whether to only swap axes or also flip the sign).
 
-TODO re-wrap this text.
 
 """
 function flipPD( input :: PersistenceDiagram; axisswap=true, signflip=true )
