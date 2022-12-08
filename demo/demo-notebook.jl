@@ -55,9 +55,6 @@ Plots.default(fontfamily = "serif",tickfont = (12, :black))
 # ╔═╡ 4bef167e-d811-4832-8646-3039409e012d
 import VortexTDA
 
-# ╔═╡ 1adbcdcb-063c-47d5-9b8e-ebc6442b7266
-VortexTDA.cubicalhomology
-
 # ╔═╡ f7b9ed63-b559-4155-8389-dad59c66a5d1
 Plots.gr()
 
@@ -182,12 +179,6 @@ md"""
 
 """
 
-# ╔═╡ d08db7ab-f9aa-4052-b67a-63c336a74b0d
-function PHs_of_field( input, cutoff=0)
-	return ripserer( Cubical(input),
-		cutoff=cutoff, reps=true, alg=:homology )
-end
-
 # ╔═╡ 630acaf0-4b21-4ed7-893f-7eaf6ade2403
 md"""
 ## Extract the representatives
@@ -212,59 +203,10 @@ md"""
 ### $H_0$ representatives
 """
 
-# ╔═╡ 8da5c1a0-ace0-4a67-944a-fa5b2922cbce
-"""
-Define alias for the type describing the representative of H0
-"""
-const H0representativePoint = Tuple{CartesianIndex{2}, Number}
-
-# ╔═╡ bd169286-1dee-493a-8854-5e165f13027e
-
-
-# ╔═╡ d9659877-8585-4ee4-923a-dc0dd990beb2
-"""
-For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
-"""
-function plotH0representativePoint!( 
-	reps::Vector{T}, 
-	plothandle, XY; kwargs... ) where T <: H0representativePoint
-
-
-	coordinates = getindex.(reps,1)
-	
-	scatter!(plothandle, XY[2][coordinates], XY[1][coordinates];
-			markersize=5,
-			palette=:Set1_9, kwargs...)
-
-
-end
-
-# ╔═╡ f542d8cb-7ce1-4156-b57b-4be802381e56
-"""
-Version of the function when only a single interval was passed.
-Simply creates a vector and passes to vector-based function.
-"""
-function plotH0representativePoint!( 
-	rep :: T,  args...; kwargs... ) where T <: H0representativePoint
-
-
-	println("Inside singleton")
-	plotH0representativePoint!( [rep,], args...; kwargs...)
-
-end 
-
 # ╔═╡ 9d5a6b96-26a1-4343-8377-6a2e60a4828f
 md"""
 ### $H_1$ representatives
 """
-
-# ╔═╡ bb060f19-1dd1-4f31-aef0-c87e3c45492b
-"""
-Define alias for representative H1 vector.
-"""
-const H1representativeVector = Tuple{
-	Vector{Tuple{CartesianIndex{2}, CartesianIndex{2}}}, # array of pairs of (x,y) points
-	Vector{T} } where T <: Number # birth value for the representative
 
 # ╔═╡ 736fdac7-87a4-4268-b8ff-34a57a45c1ce
 
@@ -278,60 +220,10 @@ Remember `.(...)` syntax broadcasts (vectorizes) the function along the vector a
 
 """
 
-# ╔═╡ 8d2cc270-00c0-4d0f-bcde-3e2b477a749b
-"""
-For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
-"""
-function plotH1representativeVector!( 
-	rep :: H1representativeVector, 
-	plothandle, XY; kwargs... ) 
-
-	[
-	plot!(plothandle, 
-		[XY[2][p] for p in edge],
-		[XY[1][p] for p in edge],
-		markersize=1, markercolor=:black,
-		palette=:Set1_9; kwargs...)		
-		for edge in rep[1]
-	]
-
-	return plothandle
-
-end
-
-# ╔═╡ 2b83a288-4ccc-4545-b964-5b43e964d321
-"""
-For each representative point, plot a scatter plot on the plothandle axis, according to grid values stored in XY ndgrid
-"""
-function plotH1representativeVector2!( 
-	rep :: H1representativeVector, 
-	plothandle, XY; kwargs... ) 
-
-	sel=[ edge[i] for i in [1] for edge in reverse(rep[1]) ]
-
-	plot!(plothandle, 
-		XY[2][sel], XY[1][sel],
-		markersize=1, markercolor=:black,
-		palette=:Set1_9; kwargs...)	
-			
-
-	return plothandle
-
-end
-
 # ╔═╡ d3a963e8-9508-4a93-8c49-5013af4c9ff1
 md"""
 ## PlotAll
 """
-
-# ╔═╡ f50f0fff-bc9e-4308-9ec9-fe51e53ab32b
-
-
-# ╔═╡ 32777668-0c47-42bf-afe1-1b3496b9c0a2
-
-
-# ╔═╡ 811dc744-12de-4f6b-a4ff-dc4e2af6f348
-
 
 # ╔═╡ 116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 md"""
@@ -576,7 +468,7 @@ end;
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
 	plot_title = "Panel $(panel) - $(caselabel): snapshot = $(j)/$(nsnapshots)"
-	plot_handle = VortexTDA.display_vorticity(XY,vort_0)
+	plot_handle = VortexTDA.display_vorticity(XY,vort_0; title=plot_title)
 end
 
 # ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
@@ -594,13 +486,13 @@ if showH0
 	
 
 	
-	plotH0representativePoint!(pos_reps0, plot_handle, XY; 
+	VortexTDA.plotH0representativePoint!(pos_reps0, plot_handle, XY; 
 	markercolor=:magenta,
 	markerstrokecolor=:black,markerstrokewidth=2,
 	markerstrokealpha=1.0,	
 	markeralpha = normalize( persistence.(PH_pos[1])),
 	)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY; 
+	VortexTDA.plotH0representativePoint!(neg_reps0, plot_handle, XY; 
 	markercolor=:green, markerstrokecolor=:black,
 	markerstrokealpha=1.0,
 	markeralpha = normalize( persistence.(PH_neg[1]) ) 
@@ -658,9 +550,9 @@ function plotall( snapshot;
 	neg_alpha = normalize(persistence.(PH_neg[1]))
 		
 		
-	plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:blue, marker=:circle,
+	VortexTDA.plotH0representativePoint!(pos_reps0, plot_handle, XY,markercolor=:blue, marker=:circle,
 	alpha=pos_alpha,markersize=6)
-	plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green, marker=:square,
+	VortexTDA.plotH0representativePoint!(neg_reps0, plot_handle, XY, markercolor=:green, marker=:square,
 	alpha=neg_alpha,markersize=6)
 	end
 
@@ -673,11 +565,11 @@ function plotall( snapshot;
 		
 	
 		for (rep1, pers) in zip( pos_reps1, pos_alpha )
-			plotH1representativeVector!(rep1, plot_handle, XY; color=:red,linewidth=4,alpha=pers)
+			VortexTDA.plotH1representativeVector!(rep1, plot_handle, XY; color=:red,linewidth=4,alpha=pers)
 		end
 	
 		for (rep1, pers) in zip( neg_reps1, neg_alpha )
-			plotH1representativeVector!(rep1, plot_handle, XY; color=:orange,linewidth=4,alpha=pers)
+			VortexTDA.plotH1representativeVector!(rep1, plot_handle, XY; color=:orange,linewidth=4,alpha=pers)
 		end
 		
 	end
@@ -811,7 +703,6 @@ end
 # ╠═43e81d74-37d8-4574-b06e-a57be04fe6be
 # ╠═032b2c0f-0c52-49dd-840d-65caa3ae7b9b
 # ╠═4684f0f4-1fb0-4248-a6c8-3d129ebe6725
-# ╠═1adbcdcb-063c-47d5-9b8e-ebc6442b7266
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
 # ╠═d17bfc41-9551-4b0b-b643-8a955fb492a0
 # ╠═4bef167e-d811-4832-8646-3039409e012d
@@ -835,27 +726,16 @@ end
 # ╠═8a3b3829-8756-44d8-b569-9f0ecc9a63ce
 # ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
-# ╠═d08db7ab-f9aa-4052-b67a-63c336a74b0d
 # ╟─630acaf0-4b21-4ed7-893f-7eaf6ade2403
 # ╠═60e39f80-ac6e-4dfe-8a99-e549f58b414c
 # ╟─a975d268-2f5e-4d50-8cae-49eb0d4654d5
 # ╠═c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
-# ╠═8da5c1a0-ace0-4a67-944a-fa5b2922cbce
-# ╠═bd169286-1dee-493a-8854-5e165f13027e
-# ╠═d9659877-8585-4ee4-923a-dc0dd990beb2
-# ╠═f542d8cb-7ce1-4156-b57b-4be802381e56
 # ╟─9d5a6b96-26a1-4343-8377-6a2e60a4828f
-# ╠═bb060f19-1dd1-4f31-aef0-c87e3c45492b
 # ╠═53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # ╠═736fdac7-87a4-4268-b8ff-34a57a45c1ce
 # ╟─17e025b4-d03f-40c4-8096-f7dccf5926ef
-# ╠═8d2cc270-00c0-4d0f-bcde-3e2b477a749b
-# ╠═2b83a288-4ccc-4545-b964-5b43e964d321
 # ╟─d3a963e8-9508-4a93-8c49-5013af4c9ff1
-# ╠═f50f0fff-bc9e-4308-9ec9-fe51e53ab32b
 # ╠═9714864a-1172-4331-8d70-a92baf41b950
-# ╠═32777668-0c47-42bf-afe1-1b3496b9c0a2
-# ╠═811dc744-12de-4f6b-a4ff-dc4e2af6f348
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485

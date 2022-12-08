@@ -1,9 +1,19 @@
 """
+Define alias for the type describing the representative of H0
+"""
+const H0representativePoint = Tuple{CartesianIndex{2}, Number}
+
+"""
+Define alias for representative H1 vector.
+"""
+const H1representativeVector = Tuple{
+	Vector{Tuple{CartesianIndex{2}, CartesianIndex{2}}}, # array of pairs of (x,y) points
+	Vector{T} } where T <: Number # birth value for the representative
+
+"""
 function cubicalhomology( field2D; kwargs... )
 
 Compute cubical homology of a scalar field given by a matrix `field2D`.
-
-
 """
 function cubicalhomology( field2D; kwargs... )
 
