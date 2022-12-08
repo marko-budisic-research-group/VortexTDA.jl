@@ -236,38 +236,7 @@ Define alias for the type describing the representative of H0
 const H0representativePoint = Tuple{CartesianIndex{2}, Number}
 
 # ╔═╡ bd169286-1dee-493a-8854-5e165f13027e
-"""
-function getH0representativePoint( PI::PersistenceDiagrams.PersistenceInterval, which )
 
-Return a vector of pairs (CartesianIndices, Float)
-for a representative gridpoint corresponding to the PersistenceInterval.
-
-If which = :max, return gridpoint with max birth time.
-If which = :min, return gridpoint with min birth time.
-
-At its output, it creates H0representativePoint vector.
-"""
-function getH0representativePoint( PI::PersistenceDiagrams.PersistenceInterval, which=:min)
-
-	reprRaw = PI.representative;
-	reprVertexIdx = vertices.(reprRaw) # vector of single-element tuples
-	reprVertexIdx = getindex.(reprVertexIdx,1) # extract the (only) element from each tuple
-	#reprVertexIdx is a Vector of CartesianIndices pairs 
-	birthValue = birth.(reprRaw)
-	# values of the field that vertices take
-
-	# selection of the gridpoint as either grid point with largest or smallest field value
-	if which == :max
-		sel_value, sel_idx = findmax(birthValue)
-	elseif which == :min
-		sel_value, sel_idx = findmin(birthValue)
-	else
-		error("Unknown selection method for the vertex")
-	end
-
-	return reprVertexIdx[sel_idx], sel_value
-
-end
 
 # ╔═╡ d9659877-8585-4ee4-923a-dc0dd990beb2
 """
@@ -315,29 +284,7 @@ const H1representativeVector = Tuple{
 	Vector{T} } where T <: Number # birth value for the representative
 
 # ╔═╡ 736fdac7-87a4-4268-b8ff-34a57a45c1ce
-"""
-function getH1vectorRepresentative( PI::PersistenceDiagrams.PersistenceInterval, which )
 
-Return a vector of pairs (Vector{CartesianIndex{2}}, Float)
-for a representative gridpoint corresponding to the PersistenceInterval.
-
-If which = :max, return gridpoint with max birth time.
-If which = :min, return gridpoint with min birth time.
-
-At its output, it creates H0representativePoint vector.
-"""
-function getH1representativeVector( PI::PersistenceDiagrams.PersistenceInterval )
-
-	reprRaw = PI.representative;
-	reprVertexIdx = vertices.(reprRaw) # vector of single-element tuples
-	#reprVertexIdx is a Vector of CartesianIndices pairs 
-	birthValue = birth.(reprRaw)
-	# values of the field that vertices take
-
-
-	return reprVertexIdx, birthValue
-
-end
 
 # ╔═╡ 17e025b4-d03f-40c4-8096-f7dccf5926ef
 md"""
@@ -672,8 +619,8 @@ end;
 # ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
 if showH0
 	println("Snapshot $j H0 visualized")
-	neg_reps0 = getH0representativePoint.(PH_neg[1])
-	pos_reps0 = getH0representativePoint.(PH_pos[1])
+	neg_reps0 = VortexTDA.getH0representativePoint.(PH_neg[1])
+	pos_reps0 = VortexTDA.getH0representativePoint.(PH_pos[1])
 
 	local x1 =  persistence.(PH_pos[1]) 
 	isfin(xx) = .~(isinf.(xx))
@@ -702,8 +649,8 @@ end
 # ╔═╡ 53de07d6-044c-42fd-8dcf-aeaaaf05d5d9
 # modifies plot_handle to visualize representatives of positive and negative H1
 if showH1
-	neg_reps1 = getH1representativeVector.(PH_neg[2])
-	pos_reps1 = getH1representativeVector.(PH_pos[2])
+	neg_reps1 = VortexTDA.getH1representativeVector.(PH_neg[2])
+	pos_reps1 = VortexTDA.getH1representativeVector.(PH_pos[2])
 
 	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY];color=:green,linewidth=2)
 	
@@ -741,8 +688,8 @@ function plotall( snapshot;
 	end
 
 	if H0
-	neg_reps0 = getH0representativePoint.(PH_neg[1])
-	pos_reps0 = getH0representativePoint.(PH_pos[1])
+	neg_reps0 = VortexTDA.getH0representativePoint.(PH_neg[1])
+	pos_reps0 = VortexTDA.getH0representativePoint.(PH_pos[1])
 
 	pos_alpha = normalize(persistence.(PH_pos[1]))
 	neg_alpha = normalize(persistence.(PH_neg[1]))
@@ -755,8 +702,8 @@ function plotall( snapshot;
 	end
 
 	if H1
-		neg_reps1 = getH1representativeVector.(PH_neg[2])
-		pos_reps1 = getH1representativeVector.(PH_pos[2])
+		neg_reps1 = VortexTDA.getH1representativeVector.(PH_neg[2])
+		pos_reps1 = VortexTDA.getH1representativeVector.(PH_pos[2])
 
 		pos_alpha = normalize(persistence.(PH_pos[2]))
 		neg_alpha = normalize(persistence.(PH_neg[2]))
