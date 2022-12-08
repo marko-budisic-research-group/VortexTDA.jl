@@ -2,7 +2,7 @@ module VortexTDA
 
 using Ripserer
 using PersistenceDiagrams
-
+using Plots
 using LaTeXStrings
 
 include("preprocessing.jl")
