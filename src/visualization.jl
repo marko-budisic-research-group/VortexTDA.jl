@@ -1,11 +1,4 @@
-
-"""
-Plot vorticity field as a red/blue heatmap.
-"""
-function display_vorticity(
-    XY,# :: Tuple{LazyGrids.GridAV,LazyGrids.GridAV},
-	Vs;
-    kwargs...)
+function display_vorticity(XY,Vs; kwargs...)
 
     colorscale_extent = maximum( abs, Vs )
 

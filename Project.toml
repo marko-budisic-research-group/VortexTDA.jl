@@ -4,5 +4,6 @@ authors = ["Marko <mbudisic@clarkson.edu>"]
 version = "0.1.0"
 
 [deps]
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 PersistenceDiagrams = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
 Ripserer = "aa79e827-bd0b-42a8-9f10-2b302677a641"
