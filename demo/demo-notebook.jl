@@ -47,16 +47,16 @@ end
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
 TableOfContents()
 
+# ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
+# set all fonts in the Plots.jl to LaTeX-style fonts
+Plots.default(fontfamily = "serif",tickfont = (12, :black))
+
+
 # ╔═╡ 4bef167e-d811-4832-8646-3039409e012d
 import VortexTDA
 
 # ╔═╡ 1adbcdcb-063c-47d5-9b8e-ebc6442b7266
 VortexTDA.cubicalhomology
-
-# ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
-# set all fonts in the Plots.jl to LaTeX-style fonts
-Plots.default(fontfamily = "serif",tickfont = (12, :black))
-
 
 # ╔═╡ f7b9ed63-b559-4155-8389-dad59c66a5d1
 Plots.gr()
@@ -175,23 +175,6 @@ Tune the following values:
 - Saving? $(@bind issaving CheckBox(default=false))
 - Extension: $(@bind ext Select(["png","pdf"]))
 """
-
-# ╔═╡ 031318f1-c3f3-4b37-86b9-ad3d5e142599
-"""
-Plot vorticity field as a red/blue heatmap.
-"""
-function display_vorticity(XY,Vs,titlestring="";kwargs...)
-
-	plot_handle = heatmap(XY[2].v,XY[1].v, Vs; title=titlestring,
-		fill=(true, cgrad([:blue, :transparent, :red])), level=20, legend = false, 
-		colorbar = true, xlabel=L"x/c", ylabel=L"y/c", 
-		background_color = :transparent, 
-		aspect_ratio = :equal, tickfont = (12, :black),xaxis = (tickfontrotation = 60.0),
-		clim=(-clevel,clevel), xlims=(0.0505,1.25), ylims=(-1.6,1.6),
-		size=(600,800), foreground_color = :black, dpi=300,kwargs...
-	);
-	return plot_handle
-end
 
 # ╔═╡ 61878364-e6b4-4886-bd45-eaa26863f363
 md"""
@@ -593,8 +576,8 @@ end;
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
 	plot_title = "Panel $(panel) - $(caselabel): snapshot = $(j)/$(nsnapshots)"
-	plot_handle = display_vorticity(XY,vort_0,plot_title);
-end;
+	plot_handle = VortexTDA.display_vorticity(XY,vort_0)
+end
 
 # ╔═╡ c7d3c4b5-6b60-4ed1-a9c5-c2c7927adcec
 if showH0
@@ -651,7 +634,7 @@ function plotall( snapshot;
 	PH_pos = snapshot[:PHpos]
 
 	# background - 
-	plot_handle = display_vorticity(snapshot[:XY],snapshot[:vort_0],plot_title;
+	plot_handle = VortexTDA.display_vorticity(snapshot[:XY],snapshot[:vort_0];
 	c = palette([:blue,:white,:red],128),fill=false,kwargs...);
 
 	pct = 0.5# minimum alpha percentage
@@ -830,8 +813,8 @@ end
 # ╠═4684f0f4-1fb0-4248-a6c8-3d129ebe6725
 # ╠═1adbcdcb-063c-47d5-9b8e-ebc6442b7266
 # ╠═4d206232-f1e6-11ec-039a-776b65cfce0a
-# ╠═4bef167e-d811-4832-8646-3039409e012d
 # ╠═d17bfc41-9551-4b0b-b643-8a955fb492a0
+# ╠═4bef167e-d811-4832-8646-3039409e012d
 # ╠═f7b9ed63-b559-4155-8389-dad59c66a5d1
 # ╟─f4f66a74-5a05-498a-b3db-b7973241429f
 # ╟─a0c3e1b9-e996-45c1-b84a-70dd5ebba63a
@@ -851,7 +834,6 @@ end
 # ╠═eb15fcab-4261-48ad-88d2-b102a64785f3
 # ╠═8a3b3829-8756-44d8-b569-9f0ecc9a63ce
 # ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
-# ╠═031318f1-c3f3-4b37-86b9-ad3d5e142599
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
 # ╠═d08db7ab-f9aa-4052-b67a-63c336a74b0d
 # ╟─630acaf0-4b21-4ed7-893f-7eaf6ade2403
