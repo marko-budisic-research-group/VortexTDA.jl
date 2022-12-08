@@ -10,7 +10,7 @@ end
 """
 Pad X/Y grid by adding a single "pixel" frame around them.
 
-#TODO merge pad_grid with pad_field_by_value, b/c how much we "extend" the grid depends on how thick of a frame we're adding to the field
+#TODO  merge pad_grid with pad_field_by_value, b/c how much we "extend" the grid depends on how thick of a frame we're adding to the field
 """
 function pad_grid(X,Y)
 	delta_x = (X[3]-X[1])/2 # why not X[2]-X[1]?
