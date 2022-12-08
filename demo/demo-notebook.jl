@@ -247,27 +247,6 @@ md"""
 			 ["persistence", "death"],default="death"))
 """
 
-# ╔═╡ 58a89334-759c-4acb-8542-cf1491f6440d
-"""
-Plots sublevel (positive) and superlevel (negative) persistence diagrams, with the option of either swapping axes or signs for the negative PD.
-
-TODO At this point, it's not clear to me (=Marko) what should be the default
-
-"""
-function plotPDs( PD_pos, PD_neg; 
-				  neg_swap_axes=false, neg_flip_sign=true, infinity=60, kwargs... )
-
-	P = plot(PD_pos; markersize=7,
-	seriescolor=[:blue, :green], label =["Subl. H0" "Subl. H1"], kwargs...)
-	
-	plot!(P, VortexTDA.flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
-			infinity= neg_flip_sign ? -infinity : infinity,	
-			seriescolor=[:red, :orange], marker=:d, markersize=7,
-			label =["Superl. H0" "Superl. H1"], 
-			kwargs... )
-	return P
-end
-
 # ╔═╡ 3f83c58a-dd59-4194-a5ee-ea8bfc101cdd
 
 
@@ -575,7 +554,7 @@ function plotall( snapshot;
 	end
 
 	### PLOTTING PD
-	pd_handle = plotPDs( PH_pos, PH_neg; 
+	pd_handle = VortexTDA.plotPDs( PH_pos, PH_neg; 
 		xlims=(-60,60),ylims=(-60,60),
 		persistence= (PDplotStyle == "persistence"), infinity=50,legend=:outertopright)
 
@@ -602,7 +581,7 @@ if doDistanceTraces
 end
 
 # ╔═╡ 3e859ca2-e53a-4713-a374-44df73b5a485
-plot_PD_handle = plotPDs(PH_pos, PH_neg; xlims=(-60,60),ylims=(-60,60),
+plot_PD_handle = VortexTDA.plotPDs(PH_pos, PH_neg; xlims=(-60,60),ylims=(-60,60),
 						title=plot_title, persistence= (PDplotStyle == "persistence"),
 						neg_swap_axes = axswap, neg_flip_sign = sgnflip )
 
@@ -677,7 +656,7 @@ end
 
 
 # ╔═╡ bd715a7e-1220-428f-b5d9-822345864cee
-	pd_handle = plotPDs( PH_pos, PH_neg;
+	pd_handle = VortexTDA.plotPDs( PH_pos, PH_neg;
 		xlims=(-30,30),ylims=(-30,30),
 		persistence=false, infinity=25,legend=:bottomleft)
 
@@ -739,7 +718,6 @@ end
 # ╟─116787f6-a4d9-48c8-8b2f-fb75a434ef1d
 # ╟─9c867fb4-f2a4-481d-add0-5230b220e14e
 # ╠═3e859ca2-e53a-4713-a374-44df73b5a485
-# ╠═58a89334-759c-4acb-8542-cf1491f6440d
 # ╠═3f83c58a-dd59-4194-a5ee-ea8bfc101cdd
 # ╟─8825772f-ca29-4457-a281-39d53f1794e0
 # ╠═54d9b89f-f4a2-4508-b590-48bda81e6036

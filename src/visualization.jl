@@ -80,3 +80,22 @@ function plotH1representativeVector!(
 
 end
 
+"""
+Plots sublevel (positive) and superlevel (negative) persistence diagrams, with the option of either swapping axes or signs for the negative PD.
+
+TODO At this point, it's not clear to me (=Marko) what should be the default
+
+"""
+function plotPDs( PD_pos, PD_neg; 
+				  neg_swap_axes=false, neg_flip_sign=true, infinity=60, kwargs... )
+
+	P = plot(PD_pos; markersize=7,
+	seriescolor=[:blue, :green], label =["Subl. H0" "Subl. H1"], kwargs...)
+	
+	plot!(P, VortexTDA.flipPD.(PD_neg; axisswap=neg_swap_axes, signflip=neg_flip_sign);
+			infinity= neg_flip_sign ? -infinity : infinity,	
+			seriescolor=[:red, :orange], marker=:d, markersize=7,
+			label =["Superl. H0" "Superl. H1"], 
+			kwargs... )
+	return P
+end
