@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.16
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -38,14 +38,16 @@ begin
 	using JLD2
 	using Printf
 	using LazyGrids
-	using PlutoUI
 	using XLSX
 	using DataFrames
 	using Revise
 end
 
 # ╔═╡ 43e81d74-37d8-4574-b06e-a57be04fe6be
+begin
+	using PlutoUI
 TableOfContents()
+end
 
 # ╔═╡ d17bfc41-9551-4b0b-b643-8a955fb492a0
 # set all fonts in the Plots.jl to LaTeX-style fonts
@@ -110,7 +112,7 @@ end;
 
 # ╔═╡ 4abde889-f80d-431c-9a78-4a53d70f4727
 function markos_path(panelcase)
-	toplevel = raw"/Volumes/GoogleDrive/.shortcut-targets-by-id/1U-9WSU_a1YjWMmjCKhqZLiC6Rha4kesp/GreenYiran/will"
+	toplevel = raw"/Users/marko/Library/CloudStorage/GoogleDrive-mbudisic@clarkson.edu/.shortcut-targets-by-id/1U-9WSU_a1YjWMmjCKhqZLiC6Rha4kesp/Yiran_Alemni/will"
 	
 	vort_path = joinpath(toplevel,"data",panelcase)
 	sav_path = joinpath(toplevel,"results",panelcase)
@@ -444,6 +446,15 @@ PH_pos, PH_neg, XY, vort_0 = (
 ) # extract the outputs into individual variables, for simplicity
 end;
 
+# ╔═╡ 9893d996-6b09-4bc1-b262-65ac4921cde9
+P = persistence.( PH_pos[2] )
+
+# ╔═╡ f46a5607-0786-4608-8c0c-9714d79211b6
+most_persistent_feature_index = findmax(P)[2]
+
+# ╔═╡ f4fe7ed4-b213-4434-8b7c-6bb6d4b17698
+PH_pos[2][most_persistent_feature_index]
+
 # ╔═╡ b7985340-2a1c-4fae-9628-123f74d6fe9e
 begin
 	plot_title = "Panel $(panel) - $(caselabel): snapshot = $(j)/$(nsnapshots)"
@@ -485,10 +496,10 @@ end
 if showH1
 	neg_reps1 = VortexTDA.getH1representativeVector.(PH_neg[2])
 	pos_reps1 = VortexTDA.getH1representativeVector.(PH_pos[2])
-
-	plotH1representativeVector!.(pos_reps1, [plot_handle], [XY];color=:green,linewidth=2)
+	@show isa.(neg_reps1, VortexTDA.H1representativeVector )
+	VortexTDA.plotH1representativeVector!.(pos_reps1, [plot_handle], [XY];color=:green,linewidth=2)
 	
-	plotH1representativeVector!.(neg_reps1, [plot_handle], [XY];color=:magenta,linewidth=2)
+	VortexTDA.plotH1representativeVector!.(neg_reps1, [plot_handle], [XY];color=:magenta,linewidth=2)
 	plot_handle
 end
 
@@ -702,6 +713,9 @@ end
 # ╠═0d90f747-5130-4aa1-9b62-1267065fd5bc
 # ╠═4224e4f8-6613-42b5-8ad5-23278f4caa21
 # ╠═eb15fcab-4261-48ad-88d2-b102a64785f3
+# ╠═9893d996-6b09-4bc1-b262-65ac4921cde9
+# ╠═f46a5607-0786-4608-8c0c-9714d79211b6
+# ╠═f4fe7ed4-b213-4434-8b7c-6bb6d4b17698
 # ╠═8a3b3829-8756-44d8-b569-9f0ecc9a63ce
 # ╠═b7985340-2a1c-4fae-9628-123f74d6fe9e
 # ╟─61878364-e6b4-4886-bd45-eaa26863f363
