@@ -133,5 +133,6 @@ function vortexIDsetup(idType, t, snapshots)
 	)
 
 	idRangecase = idRange_2Var[rangeVar]
-    return idMatrixcase, idMethodcase, idCutoffcase, levelsetH0Case, levelsetH1Case, idRangecase, axesLims_plus, axesLims_minus, raw_maxs, raw_mins    
+    returnVars = (idMatrixcase, idMethodcase, idCutoffcase, levelsetH0Case, levelsetH1Case, idRangecase, axesLims_plus, axesLims_minus, raw_maxs, raw_mins)    
+    return returnVars
 end
