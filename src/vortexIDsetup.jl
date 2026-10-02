@@ -118,7 +118,7 @@ function vortexIDsetup(idType, t, snapshots)
 	levelsetH0Case = (sublevel_H0,superlevel_H0)
 	levelsetH1Case = (sublevel_H1,superlevel_H1)
 
-    axesLims_plus, axesLims_minus = universalLims(t, snapshots)
+    axesLims_plus, axesLims_minus, raw_maxs, raw_mins = universalLims(t, snapshots)
 
     idRange_2Var = Dict(
 		:range_vorticity => [(axesLims_minus-5),(axesLims_plus+5)],
@@ -133,5 +133,5 @@ function vortexIDsetup(idType, t, snapshots)
 	)
 
 	idRangecase = idRange_2Var[rangeVar]
-    return idMatrixcase, idMethodcase, idCutoffcase, levelsetH0Case, levelsetH1Case, idRangecase, axesLims_plus, axesLims_minus    
+    return idMatrixcase, idMethodcase, idCutoffcase, levelsetH0Case, levelsetH1Case, idRangecase, axesLims_plus, axesLims_minus, raw_maxs, raw_mins    
 end
