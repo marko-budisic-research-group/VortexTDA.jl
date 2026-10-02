@@ -1,4 +1,4 @@
-function vortexIDsetup(idType)
+function casesetup(idType)
 
     idMatrix_2Name = Dict(
 			:Vorticity => "Omega_z_PA",
