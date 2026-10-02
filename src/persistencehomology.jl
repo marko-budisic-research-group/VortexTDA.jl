@@ -25,6 +25,20 @@ function cubicalhomology( field2D; kwargs... )
 end
 
 """
+function cubicalcohomology( field2D; kwargs... )
+	
+	Compute cubical cohomology of a scalar field given by a matrix `field2D`.
+	"""
+	function cubicalcohomology( field2D; kwargs... )
+	
+	    cubicalcoComplex = Cubical(field2D)
+	    PH_CO = ripserer(cubicalcoComplex;
+	        reps=true,
+	        kwargs... )
+	
+	end
+
+	"""
 function getH0representativePoint( PI::PersistenceDiagrams.PersistenceInterval, which )
 
 Return a vector of pairs (CartesianIndices, Float)
