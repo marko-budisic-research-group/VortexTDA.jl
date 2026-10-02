@@ -1,11 +1,19 @@
 """
 Pad the field by frame of desired width containing specific value.
 """
-function pad_field_by_value(input; value=0, n_pixels=1)
-	output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
-	output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
-	return output
-end
+	function pad_field_by_value(input; value=0, n_pixels=1)
+		if value == "None"
+			output = input
+		elseif value == -Inf
+			value = -value
+			output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
+		output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
+		else
+		output = ones(size(input)[1]+n_pixels*2,size(input)[2]+n_pixels*2)*value
+		output[(1+n_pixels):end-n_pixels,(1+n_pixels):end-n_pixels] = input
+		end
+		return output
+	end
 
 """
 Pad X/Y grid by adding a single "pixel" frame around them.
