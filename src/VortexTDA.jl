@@ -8,6 +8,7 @@ using LaTeXStrings
 include("preprocessing.jl")
 include("persistencehomology.jl")
 include("visualization.jl")
+include("vortexIDsetup.jl")
 
 export cubicalhomology
 
