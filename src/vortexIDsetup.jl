@@ -1,4 +1,4 @@
-function casesetup(idType)
+function casesetup(idType, axesLims_plus, axesLims_minus)
 
     idMatrix_2Name = Dict(
 			:Vorticity => "Omega_z_PA",
@@ -12,7 +12,7 @@ function casesetup(idType)
 			:R_Characteristic => "R_Characteristic"
 		)
 	
-		idMatrixcase = "$(idMatrix_2Name[idType])"
+		idMatrix = "$(idMatrix_2Name[idType])"
 
     idTypeToFile = Dict(
 		:Vorticity => "Vorticity",
@@ -26,7 +26,7 @@ function casesetup(idType)
 		:R_Characteristic => "R Characteristic"
 	)
 
-	idMethodcase = "$(idTypeToFile[idType])"
+	idMethod = "$(idTypeToFile[idType])"
 
     # filter which homology group is relevant to vortex ID method, 
     # and choose relevant side of filtration 
@@ -114,9 +114,9 @@ function casesetup(idType)
 		:cut_R => 25.00
 	)
 
-	idCutoffcase = idCutoff_2Var[cutoffType]
-	levelsetH0Case = (sublevel_H0,superlevel_H0)
-	levelsetH1Case = (sublevel_H1,superlevel_H1)
+	idCutoff = idCutoff_2Var[cutoffType]
+	levelsetH0 = (sublevel_H0,superlevel_H0)
+	levelsetH1 = (sublevel_H1,superlevel_H1)
 
 
     idRange_2Var = Dict(
@@ -131,7 +131,7 @@ function casesetup(idType)
 		:range_R => [(axesLims_minus-5),(axesLims_plus+5)]
 	)
 
-	idRangecase = idRange_2Var[rangeVar]
-    returnVars = (idMatrixcase, idMethodcase, idCutoffcase, levelsetH0Case, levelsetH1Case, idRangecase)    
+	idRange = idRange_2Var[rangeVar]
+    returnVars = (idMatrix, idMethod, idCutoff, levelsetH0, levelsetH1, idRange)    
     return returnVars
 end
