@@ -4,6 +4,7 @@ using Ripserer
 using PersistenceDiagrams
 using Plots
 using LaTeXStrings
+using Makie
 
 include("preprocessing.jl")
 include("persistencehomology.jl")

@@ -99,3 +99,19 @@ function plotPDs( PD_pos, PD_neg;
 			kwargs... )
 	return P
 end
+
+function plotSnapshots(resolution, XY, field2D, methodID, panel, theta, j, nsnapshots, cut, axislim_plus, axislim_minus)
+	f = Makie.Figure(size=resolution)
+	leg = f[1,1]
+	ax = f[1,2]
+	snapshotax = Make.Axis(ax, title = "Homology Snapshot: $(methodID) \n Panel $(panel) — θ = $(theta)° | Snapshot: $(j)/$(nsnapshots) | Cutoff = $(cut) \n pad = Inf", 
+					   xlabel = L"x/c", 
+					   ylabel = L"y/c"
+					  )
+	
+	heatmapax = heatmap!(snapshotax,XY[2].v, XY[1].v,transpose(field2D),colormap="vik10", colorrange=(axislim_minus,axislim_plus),lowclip=:white)
+	
+	Colorbar(f[:, end+1],heatmapax)
+
+	return f
+end

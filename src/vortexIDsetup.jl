@@ -1,4 +1,4 @@
-function casesetup(idType, axesLims_plus, axesLims_minus)
+function casesetup(idType)
 
     idMatrix_2Name = Dict(
 			:Vorticity => "Omega_z_PA",
@@ -118,20 +118,6 @@ function casesetup(idType, axesLims_plus, axesLims_minus)
 	levelsetH0 = (sublevel_H0,superlevel_H0)
 	levelsetH1 = (sublevel_H1,superlevel_H1)
 
-
-    idRange_2Var = Dict(
-		:range_vorticity => [(axesLims_minus-5),(axesLims_plus+5)],
-		:range_Q => [(axesLims_minus-5),(axesLims_plus+5)],
-		:range_Truesdell => [(axesLims_minus-5),(axesLims_plus+5)], 
-		:range_OmegaR => [0,1.05], 
-		:range_Lambda2 => [(axesLims_minus-5),(axesLims_plus+5)],
-		:range_Delta => [(axesLims_minus-5),(axesLims_plus+5)],
-		:range_LambdaCi => [(axesLims_minus-5),(axesLims_plus+5)],
-		:range_Rortex => [(axesLims_minus-5),(axesLims_plus+5)],
-		:range_R => [(axesLims_minus-5),(axesLims_plus+5)]
-	)
-
-	idRange = idRange_2Var[rangeVar]
-    returnVars = (idMatrix, idMethod, idCutoff, levelsetH0, levelsetH1, idRange)    
+    returnVars = (idMatrix, idMethod, idCutoff, levelsetH0, levelsetH1, rangeVar)    
     return returnVars
 end
