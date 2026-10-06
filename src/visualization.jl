@@ -29,16 +29,24 @@ For each representative point, plot a scatter plot on the plothandle axis, accor
 """
 function plotH0representativePoint!( 
 	reps::Vector{T}, 
-	plothandle, XY; kwargs... ) where T <: H0representativePoint
+	plothandle, XY, levelsetcase; kwargs... ) where T <: H0representativePoint
 
+	if levelsetcase == true
+	labels = Vector{String}(undef, length(reps))
+
+	for i = 1:length(reps)
+		labels[i] = "$(i)"
+	end
 
 	coordinates = getindex.(reps,1)
 	
-	scatter!(plothandle, XY[2][coordinates], XY[1][coordinates];
+	Makie.scatter!(plothandle, XY[2][coordinates], XY[1][coordinates];
 			markersize=5,
-			palette=:Set1_9, kwargs...)
+			color=1:length(reps), label = [colorValue => (; color = id) for (id, colorValue) in enumerate(labels)],kwargs...)
 
-
+	Makie.annotation!(plothandle, XY[2][coordinates], XY[1][coordinates]; style = Ann.Styles.LineArrow(), color=:white, text = labels, textcolor=:white, shrink=(10,10),lineheight=1, kwargs...)
+	end
+	return plothandle
 end
 
 """
@@ -64,18 +72,38 @@ For each representative point, plot a scatter plot on the plothandle axis, accor
 
 """
 function plotH1representativeVector!( 
-	rep :: H1representativeVector, 
-	plothandle, XY; kwargs... ) 
+	reps :: H1representativeVector, 
+	plothandle, XY, levelsetcase; kwargs... ) 
 
-	[
-	plot!(plothandle, 
-		[XY[2][p] for p in edge],
-		[XY[1][p] for p in edge],
-		markersize=1, markercolor=:black,
-		palette=:Set1_9; kwargs...)		
-		for edge in rep[1]
-	]
+	if levelsetcase == true
+		labels = Vector{String}(undef, length(reps))
 
+		for i = 1:length(reps)
+		labels[i] = "$(i)"
+		end
+
+		edges = Vector{Any}((undef), length(reps))
+
+		for i in eachindex(reps)
+			edges[i] = reps[i][1]
+		end
+
+		edges_all = []
+
+		for i in eachindex(edges)
+			push!(edges_all,[])
+			for j in eachindex(edges_all[i])
+			push!(edges_all[i], Point2f[(XY[2][edges[i][j][1]],XY[1][edges[i][j][1]]), (XY[2][edges[i][j][2]],XY[1][edges[i][j][2]])])
+			end
+		end
+
+		for i = 1:length(edges_all)
+			for j = 1:length(edges_all[i])
+				lineseg_ax = push!(lineseg_ax[i], Makie.linesegments!(plothandle, edges_all[i][j]; linewidth = 1, kwargs...) )
+			end
+		end
+	end
+	
 	return plothandle
 
 end
@@ -113,5 +141,8 @@ function plotSnapshots(resolution, XY, field2D, methodID, panel, theta, j, nsnap
 	
 	Colorbar(f[:, end+1],heatmapax)
 
+	leg = Makie.Legend(f, ax, L"H_0", framevisible = false)
 	return f
 end
+
+function
