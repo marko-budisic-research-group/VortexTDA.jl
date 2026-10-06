@@ -103,7 +103,7 @@ function plotH1representativeVector!(
 			end
 		end
 	end
-	
+
 	return plothandle
 
 end
@@ -145,4 +145,3 @@ function plotSnapshots(resolution, XY, field2D, methodID, panel, theta, j, nsnap
 	return f
 end
 
-function
