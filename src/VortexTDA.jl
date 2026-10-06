@@ -12,5 +12,6 @@ include("visualization.jl")
 include("vortexIDsetup.jl")
 
 export cubicalhomology
+export cubicalcohomology
 
 end # module VortexTDA
